@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Client_ServerTest01
+﻿namespace Client_ServerTest01
 {
     public class Permissions
     {
@@ -15,7 +9,6 @@ namespace Client_ServerTest01
         public bool FDelete { get; set; }
         public bool FRead { get; set; }
         public bool FWrite { get; set; }
-
         public Permissions()
         {
             Dcreate = false;

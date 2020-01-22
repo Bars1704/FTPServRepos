@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Client_ServerTest01
 {
+    [Serializable]
     class Folder: Unit
     {
         public int FilesInsideCount { get; set; }
@@ -23,7 +22,20 @@ namespace Client_ServerTest01
             Files = GetFilesInside(dinfo, UserName, ref FileCount);
             FilesInsideCount = FileCount;
         }
-        public long GetSize(DirectoryInfo dinfo)
+        public Folder(DirectoryInfo dinfo, int FileCount,Folder OldFolder)
+        {
+            Name = dinfo.Name;
+            Path = dinfo.FullName;
+            Owner = OldFolder.Owner;
+            CreateTime = dinfo.CreationTime;
+            ShareTime = OldFolder.ShareTime;
+            Colour = OldFolder.Colour;
+            Size = GetSize(dinfo);
+            Files = GetFilesInside(dinfo, OldFolder.Owner, ref FileCount,OldFolder);
+            
+            FilesInsideCount = FileCount;
+        }
+        private long GetSize(DirectoryInfo dinfo)
         {
             long Size = 0;
             var Files = dinfo.GetFiles();
@@ -38,7 +50,7 @@ namespace Client_ServerTest01
             }
             return Size;
         }
-        public List<Unit> GetFilesInside(DirectoryInfo dinfo,string UserName ,ref int FilesCount )
+        private List<Unit> GetFilesInside(DirectoryInfo dinfo,string UserName ,ref int FilesCount )
         {
             var Files = dinfo.GetFiles();
             var Dirs = dinfo.GetDirectories();
@@ -54,10 +66,45 @@ namespace Client_ServerTest01
             }
             return AllFiles;
         }
-        public void Serialization(string Path , Folder rootFile)
+        private List<Unit> GetFilesInside(DirectoryInfo dinfo, string UserName, ref int FilesCount, Folder OldFolder)
         {
+            var Files = dinfo.GetFiles();
+            var Dirs = dinfo.GetDirectories();
+            List<Unit> AllFiles = new List<Unit>();
+            foreach (var CurFile in Files)
+            {
+                File OldFile = (File)OldFolder.Files.Find((x) => x.Name == CurFile.Name && x is File);
+                AllFiles.Add(new File(CurFile,OldFile));
+                FilesCount++;
+            }
+            foreach (var CurDir in Dirs)
+            {
+                OldFolder = (Folder)OldFolder.Files.Find((x) => x.Name == CurDir.Name&&x is Folder);
+                AllFiles.Add(new Folder(CurDir, FilesCount, OldFolder));
+            }
+            return AllFiles;
+        }
+        public void Serialization(string Path , Folder rootFile,string UserName)
+        {
+            BinaryFormatter Serializer = new BinaryFormatter();
+            FileInfo Check = new FileInfo(Path + "\\Cache.dat");
+            FileStream fs;
             DirectoryInfo RootDir = new DirectoryInfo(Path);
-            var Files = RootDir.GetFiles();
+            Folder RootFile;
+            if (Check.Exists)
+            {
+                fs = new FileStream(Path + "\\Cache.dat", FileMode.Open);
+                Folder OldFolder = (Folder)Serializer.Deserialize(fs);
+                RootFile = new Folder(RootDir, 0, OldFolder);
+                
+            }
+            else
+            { 
+                RootFile = new Folder(RootDir, UserName, 0);
+            }
+            RootFile.Name = "Root";
+            fs = new FileStream(Path + "\\Cache.dat", FileMode.Create);
+            Serializer.Serialize(fs, rootFile);
         }
     }
 }
