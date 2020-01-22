@@ -33,7 +33,6 @@ namespace Client_ServerTest01
             System.Diagnostics.Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location);
             Environment.Exit(0);
         }
-
         static private void CreateFTPUser(string UserName, string Password, string UserLogin, ushort SpeedLimit = 10240)
         {
             SpeedLimit Limit = new SpeedLimit 
@@ -107,7 +106,6 @@ namespace Client_ServerTest01
                 Log("BanIP", ex.Message);
             }
         }
-
         static private List<string> GetBannedIps()
         {
             try
@@ -127,7 +125,6 @@ namespace Client_ServerTest01
                 return null;
             }
         }
-
         static private void EditUserSpeed(string UserName, ushort SpeedLimit)
         {
             try
@@ -150,8 +147,7 @@ namespace Client_ServerTest01
                 Log("BanIP", ex.Message);
             }
         }
-
-      static  private void AddAlias(string UserName, string Path, string AliasName, Permissions Perms)
+        static  private void AddAlias(string UserName, string Path, string AliasName, Permissions Perms)
         {
             try
             {
@@ -196,8 +192,7 @@ namespace Client_ServerTest01
                 Log("AddAlias", ex.Message);
             }
         }
-
-       static void EditAliasPermissions(string UserName, string AliasName, Permissions Perms)
+        static void EditAliasPermissions(string UserName, string AliasName, Permissions Perms)
         {
             try
             {
@@ -242,7 +237,6 @@ namespace Client_ServerTest01
                 Log("EditAliasPerms", ex.Message);
             }
         }
-
         static void RemoveAlias(string UserName, string AliasName)
         {
             try
@@ -262,12 +256,12 @@ namespace Client_ServerTest01
         }
         static void Main(string[] args)
         {
+            string MethodName = "Main";
+            byte[] data;
+            Console.WriteLine("Start");
+            bool ExitTrigger = true;
             try
             {
-                string MethodName;
-                byte[] data;
-                Console.WriteLine("Start");
-                bool ExitTrigger = true;
                 IPEndPoint ipPoint = new IPEndPoint(IPAddress.Parse("0.0.0.0"), ServerPort);
                 Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 listenSocket.Bind(ipPoint);
@@ -350,7 +344,7 @@ namespace Client_ServerTest01
                             }
                             Task.Run(() => RemoveUser(Name));
                             Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine("Creating User with name - {Name}");
+                            Console.WriteLine("Removing User with name - {Name}");
                             Console.ResetColor();
                             break;
 
@@ -365,7 +359,7 @@ namespace Client_ServerTest01
                             }
                             Task.Run(() => BanIp(Name));
                             Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine("Creating User with name - {Name}");
+                            Console.WriteLine("Ban IP {Name}");
                             Console.ResetColor();
                             break;
 
@@ -382,7 +376,7 @@ namespace Client_ServerTest01
                                 XMLDoc.AppendChild(Node);
                             }
                             handler.Send(Encoding.Default.GetBytes(XMLDoc.ToString()));
-                            Console.WriteLine("Creating User with name - {Name}");
+                            Console.WriteLine("Getting banned IP list");
                             break;
 
                         case "EditSpeed":
@@ -408,7 +402,7 @@ namespace Client_ServerTest01
                             }
                             Task.Run(() => EditUserSpeed(Name, Limit));
                             Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine("Creating User with name - {Name}");
+                            Console.WriteLine("Editing speed for user {Name} : new speed - {Limit} Kbs");
                             Console.ResetColor();
                             break;
 
@@ -467,7 +461,7 @@ namespace Client_ServerTest01
                             }
                             Task.Run(() => AddAlias(Name, Password, Login, permissions));
                             Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine("Creating User with name - {Name}");
+                            Console.WriteLine("Addng alias \"{Login}\" to user {Name}");
                             Console.ResetColor();
                             break;
 
@@ -559,7 +553,7 @@ namespace Client_ServerTest01
             }
             catch(Exception ex)
             {
-
+                Log(MethodName,ex.Message);
             }
         }
     }   
