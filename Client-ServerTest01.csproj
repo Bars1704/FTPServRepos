@@ -53,7 +53,7 @@
   <ItemGroup>
     <Compile Include="Models\File.cs" />
     <Compile Include="Models\Folder.cs" />
-    <Compile Include="Models\PseudoFile.cs" />
+    <Compile Include="Models\Unit.cs" />
     <Compile Include="Permissions.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

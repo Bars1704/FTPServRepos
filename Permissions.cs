@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Client_ServerTest01
 {
-    class Permissions
+    public class Permissions
     {
         public bool Dcreate { get; set; }
         public bool DDelete { get; set; }
@@ -15,5 +15,16 @@ namespace Client_ServerTest01
         public bool FDelete { get; set; }
         public bool FRead { get; set; }
         public bool FWrite { get; set; }
+
+        public Permissions()
+        {
+            Dcreate = false;
+            DDelete = false;
+            DList = true;
+            FAppend = true;
+            FDelete = false;
+            FRead = true;
+            FWrite = true;
+        }
     }
 }

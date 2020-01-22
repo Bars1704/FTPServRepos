@@ -3,8 +3,9 @@ using System.Collections.Generic;
 
 namespace Client_ServerTest01
 {
-    class PseudoFile
+    class Unit
     {
+        public float Size { get; set; }
         public string Name { get; set; }
         public string Path { get; set; }
         public string Owner { get; set; }

@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Client_ServerTest01
 {
-    class File : PseudoFile
+    class File : Unit
     {
         public string Extension { get; set; }
-        public float Size { get; set; }
+        public bool InstantVuive { get; set; }
     }
 }

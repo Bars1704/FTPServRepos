@@ -10,6 +10,7 @@ using System.Xml;
 
 namespace Client_ServerTest01
 {
+    //TODO: //Проверить пути алиасов-групп и папок юзеров
     public class InvalidXMLExeption : Exception
     {
         public new string Message = "Invalid XML";
@@ -33,7 +34,7 @@ namespace Client_ServerTest01
             System.Diagnostics.Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location);
             Environment.Exit(0);
         }
-        static private void CreateFTPUser(string UserName, string Password, string UserLogin, ushort SpeedLimit = 10240)
+        static private void CreateFTPUser(string UserName, string GroupName, string Password, string UserLogin, ushort SpeedLimit = 10240)
         {
             SpeedLimit Limit = new SpeedLimit 
             {
@@ -65,6 +66,10 @@ namespace Client_ServerTest01
                 CreatedUser.AssignPassword(Password, fileZillaApi.ProtocolVersion);
                 Settings.Users.Add(CreatedUser);
                 fileZillaApi.SetAccountSettings(Settings);
+                if (GroupName != "No Groop")
+                {
+                    EditUserGroup(UserName, GroupName);
+                }
             }
             catch (Exception ex)
             {
@@ -146,6 +151,37 @@ namespace Client_ServerTest01
             {
                 Log("BanIP", ex.Message);
             }
+        }
+        static private void EditUserGroup(string UserName, string Group)
+        {
+            try
+            {
+                var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
+                fileZillaApi.Connect(FileZillaPass);
+                var settings = fileZillaApi.GetAccountSettings();
+                var EditMe = settings.Users.Find((User) => Equals(User.UserName, UserName));
+                EditMe.GroupName = Group;
+                RemoveAlias(UserName, "Films");
+                RemoveAlias(UserName, "Soft");
+                switch (Group)
+                {
+                    case "Films":
+                        AddAlias(UserName, @"\D\Films", "Films", new Permissions());
+                        break;
+                    case "Soft":
+                        AddAlias(UserName, @"\D\Soft", "Soft", new Permissions());
+                        break;
+                    case "Films + Soft":
+                        AddAlias(UserName, @"\D\Films", "Films", new Permissions());
+                        AddAlias(UserName, @"\D\Soft", "Soft", new Permissions());
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("EditUser", ex.Message);
+            }
+
         }
         static  private void AddAlias(string UserName, string Path, string AliasName, Permissions Perms)
         {
@@ -246,8 +282,18 @@ namespace Client_ServerTest01
                 var settings = fileZillaApi.GetAccountSettings();
                 var User = settings.Users.Find((CurrUser) => Equals(CurrUser.UserName, UserName));
                 SharedFolder Editme = User.SharedFolders.Find((Folder) => Folder.Aliases.Contains(AliasName));
-                User.SharedFolders.Remove(Editme);
-                fileZillaApi.SetAccountSettings(settings);
+                if (Editme != null)
+                {
+                    User.SharedFolders.Remove(Editme);
+                    fileZillaApi.SetAccountSettings(settings);
+                }
+                else
+                {
+                    if (AliasName != "Soft" && AliasName != "Films")
+                    {
+                        throw new Exception("Cant find this group!");
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -265,11 +311,11 @@ namespace Client_ServerTest01
                 IPEndPoint ipPoint = new IPEndPoint(IPAddress.Parse("0.0.0.0"), ServerPort);
                 Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 listenSocket.Bind(ipPoint);
-                Console.WriteLine("Bilding");
+                Console.WriteLine(DateTime.Now  + "  Bilding");
                 listenSocket.Listen(100);
-                Console.WriteLine("Listening");
+                Console.WriteLine(DateTime.Now +  "  Listening");
                 Socket handler = listenSocket.Accept();
-                Console.WriteLine("Ready!");
+                Console.WriteLine(DateTime.Now +"  Ready!");
                 while (ExitTrigger)
                 {
                     int Counter = 0;
@@ -281,7 +327,7 @@ namespace Client_ServerTest01
                     XmlElement xRoot = XMLDoc.DocumentElement;
                     XmlNode attr = xRoot.Attributes.GetNamedItem("Method");
                     MethodName = attr.Value;
-                    string Name = null, Password = null, Login = null;
+                    string Name = null, Password = null, Login = null, Group = null;
                     Permissions permissions = new Permissions();
                     ushort Limit = 0;
                     switch (MethodName)
@@ -289,14 +335,15 @@ namespace Client_ServerTest01
                         case "Shutdown":
                             handler.Shutdown(SocketShutdown.Both);
                             handler.Close();
-                            Console.WriteLine("Closing");
+                            StreamWriter writer = new StreamWriter("\\ErrorLog.txt", true, System.Text.Encoding.UTF8);
+                            writer.WriteLine(DateTime.Now + "  Closing");
+                            writer.Flush();
+                            writer.Close();
                             ExitTrigger = false;
                             break;
 
                         case "Restart":
-                            System.Diagnostics.Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location);
-                            Environment.Exit(0);
-                            break;
+                            throw new Exception("Restatring");
 
                         case "CreateUser":
                             foreach (XmlNode childnode in attr.ChildNodes)
@@ -305,6 +352,10 @@ namespace Client_ServerTest01
                                 {
                                     case "Name":
                                         Name = childnode.InnerText;
+                                        Counter++;
+                                        break;
+                                    case "Group":
+                                        Group = childnode.InnerText;
                                         Counter++;
                                         break;
                                     case "Password":
@@ -323,13 +374,13 @@ namespace Client_ServerTest01
                                         throw new InvalidXMLExeption();
                                 }
                             }
-                            if (Counter != 4)
+                            if (Counter != 5)
                             {
                                 throw new InvalidXMLExeption();
                             }
-                            Task.Run(() => CreateFTPUser(Name, Password, Login, Limit));
+                            Task.Run(() => CreateFTPUser(Name,Group, Password, Login, Limit));
                             Console.ForegroundColor = ConsoleColor.Green;
-                            Console.WriteLine("Creating User with name - {Name}");
+                            Console.WriteLine(DateTime.Now + "  Creating User with name - {Name}");
                             Console.ResetColor();
                             break;
 
@@ -344,7 +395,7 @@ namespace Client_ServerTest01
                             }
                             Task.Run(() => RemoveUser(Name));
                             Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine("Removing User with name - {Name}");
+                            Console.WriteLine(DateTime.Now + "  Removing User with name - {Name}");
                             Console.ResetColor();
                             break;
 
@@ -359,7 +410,7 @@ namespace Client_ServerTest01
                             }
                             Task.Run(() => BanIp(Name));
                             Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine("Ban IP {Name}");
+                            Console.WriteLine(DateTime.Now + "  Ban IP {Name}");
                             Console.ResetColor();
                             break;
 
@@ -376,7 +427,7 @@ namespace Client_ServerTest01
                                 XMLDoc.AppendChild(Node);
                             }
                             handler.Send(Encoding.Default.GetBytes(XMLDoc.ToString()));
-                            Console.WriteLine("Getting banned IP list");
+                            Console.WriteLine(DateTime.Now + "  Getting banned IP list");
                             break;
 
                         case "EditSpeed":
@@ -402,7 +453,7 @@ namespace Client_ServerTest01
                             }
                             Task.Run(() => EditUserSpeed(Name, Limit));
                             Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine("Editing speed for user {Name} : new speed - {Limit} Kbs");
+                            Console.WriteLine(DateTime.Now + "  Editing speed for user {Name} : new speed - {Limit} Kbs");
                             Console.ResetColor();
                             break;
 
@@ -461,7 +512,7 @@ namespace Client_ServerTest01
                             }
                             Task.Run(() => AddAlias(Name, Password, Login, permissions));
                             Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine("Addng alias \"{Login}\" to user {Name}");
+                            Console.WriteLine(DateTime.Now + "  Addng alias \"{Login}\" to user {Name}");
                             Console.ResetColor();
                             break;
 
@@ -516,7 +567,7 @@ namespace Client_ServerTest01
                             }
                             Task.Run(() => EditAliasPermissions(Name, Login, permissions));
                             Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine("Creating User with name - {Name}");
+                            Console.WriteLine(DateTime.Now + "  Creating User with name - {Name}");
                             Console.ResetColor();
                             break;
 
@@ -543,9 +594,37 @@ namespace Client_ServerTest01
                             }
                             Task.Run(() => RemoveAlias(Name, Login));
                             Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine("Creating User with name - {Name}");
+                            Console.WriteLine(DateTime.Now + "  Creating User with name - {Name}");
                             Console.ResetColor();
                             break;
+
+                        case "EditGroup":
+                            foreach (XmlNode childnode in attr.ChildNodes)
+                            {
+                                switch (childnode.Name)
+                                {
+                                    case "Name":
+                                        Name = childnode.InnerText;
+                                        Counter++;
+                                        break;
+                                    case "GrupName":
+                                        Login = childnode.InnerText;
+                                        Counter++;
+                                        break;
+                                    default:
+                                        throw new InvalidXMLExeption();
+                                }
+                            }
+                            if (Counter != 2)
+                            {
+                                throw new InvalidXMLExeption();
+                            }
+                            Task.Run(() => EditUserGroup(Name, Login));
+                            Console.ForegroundColor = ConsoleColor.Yellow;
+                            Console.WriteLine(DateTime.Now + "  Editing User with name - {Name} to group {Login}");
+                            Console.ResetColor();
+                            break;
+
                         default:
                             throw new InvalidXMLExeption();
                     }
