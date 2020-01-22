@@ -51,7 +51,9 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="File.cs" />
+    <Compile Include="Models\File.cs" />
+    <Compile Include="Models\Folder.cs" />
+    <Compile Include="Models\PseudoFile.cs" />
     <Compile Include="Permissions.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
