@@ -39,45 +39,45 @@ namespace Client_ServerTest01
             int Counter = 0;
             string Name = null, Group = null, Password = null, Login = null;
             ushort Limit = 1024;
-            foreach (XmlNode childnode in attr.ChildNodes)
-            {
-                switch (childnode.Name)
-                {
-                    case "Name":
-                        Name = childnode.InnerText;
-                        Counter++;
-                        break;
-                    case "Group":
-                        Group = childnode.InnerText;
-                        Counter++;
-                        break;
-                    case "Password":
-                        Password = childnode.InnerText;
-                        Counter++;
-                        break;
-                    case "Login":
-                        Login = childnode.InnerText;
-                        Counter++;
-                        break;
-                    case "SpeedLimit":
-                        Limit = ushort.Parse(childnode.InnerText);
-                        Counter++;
-                        break;
-                    default:
-                        throw new InvalidXMLExeption();
-                }
-            }
-            if (Counter != 5)
-            {
-                throw new InvalidXMLExeption();
-            }
-            SpeedLimit SpeedLimit = new SpeedLimit 
-            {
-                ConstantSpeedLimit = Limit,
-                SpeedLimitType = SpeedLimitType.ConstantSpeedLimit,
-            };
             try
             {
+                foreach (XmlNode childnode in attr.ChildNodes)
+                {
+                    switch (childnode.Name)
+                    {
+                        case "Name":
+                            Name = childnode.InnerText;
+                            Counter++;
+                            break;
+                        case "Group":
+                            Group = childnode.InnerText;
+                            Counter++;
+                            break;
+                        case "Password":
+                            Password = childnode.InnerText;
+                            Counter++;
+                            break;
+                        case "Login":
+                            Login = childnode.InnerText;
+                            Counter++;
+                            break;
+                        case "SpeedLimit":
+                            Limit = ushort.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+                        default:
+                            throw new InvalidXMLExeption();
+                    }
+                }
+                if (Counter != 5)
+                {
+                    throw new InvalidXMLExeption();
+                }
+                SpeedLimit SpeedLimit = new SpeedLimit
+                {
+                    ConstantSpeedLimit = Limit,
+                    SpeedLimitType = SpeedLimitType.ConstantSpeedLimit,
+                };
                 var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
                 fileZillaApi.Connect(FileZillaPass);
                 var Settings = fileZillaApi.GetAccountSettings();
@@ -105,14 +105,14 @@ namespace Client_ServerTest01
                 {
                     EditUserGroup(Name, Group);
                 }
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine(DateTime.Now + "  Creating User with name - {Name}");
+                Console.ResetColor();
             }
             catch (Exception ex)
             {
                 Log("CreateUser", ex.Message);
             }
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine(DateTime.Now + "  Creating User with name - {Name}");
-            Console.ResetColor();
         }
         static private void RemoveUser(XmlNode attr)
         {
@@ -240,31 +240,38 @@ namespace Client_ServerTest01
                 Log("BanIP", ex.Message);
             }
         }
-        static void UnWrapEditGroup(XmlNode attr)
+        static private void UnWrapEditGroup(XmlNode attr)
         {
-            string Name = null, GroupName = null;
-            int Counter = 0;
-            foreach (XmlNode childnode in attr.ChildNodes)
+            try
             {
-                switch (childnode.Name)
+                string Name = null, GroupName = null;
+                int Counter = 0;
+                foreach (XmlNode childnode in attr.ChildNodes)
                 {
-                    case "Name":
-                        Name = childnode.InnerText;
-                        Counter++;
-                        break;
-                    case "GrupName":
-                        GroupName = childnode.InnerText;
-                        Counter++;
-                        break;
-                    default:
-                        throw new InvalidXMLExeption();
+                    switch (childnode.Name)
+                    {
+                        case "Name":
+                            Name = childnode.InnerText;
+                            Counter++;
+                            break;
+                        case "GrupName":
+                            GroupName = childnode.InnerText;
+                            Counter++;
+                            break;
+                        default:
+                            throw new InvalidXMLExeption();
+                    }
                 }
+                if (Counter != 2)
+                {
+                    throw new InvalidXMLExeption();
+                }
+                Task.Run(() => EditUserGroup(Name, GroupName));
             }
-            if (Counter != 2)
+            catch (Exception ex)
             {
-                throw new InvalidXMLExeption();
+                Log("UnWrapEditGroup", ex.Message);
             }
-            Task.Run(() => EditUserGroup(Name, GroupName));
         }
         static private void EditUserGroup(string UserName, string Group)
         {
@@ -290,6 +297,9 @@ namespace Client_ServerTest01
                         AddAlias(UserName, @"\D\Soft", "Soft", new Permissions());
                         break;
                 }
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine(DateTime.Now + "  Editing User with name - {Name} to group {Login}");
+                Console.ResetColor();
             }
             catch (Exception ex)
             {
@@ -297,69 +307,73 @@ namespace Client_ServerTest01
             }
 
         }
-      static private void UnWrapXMLAlias(XmlNode attr)
+        static private void UnWrapXMLAlias(XmlNode attr)
         {
-            string Name = null, Path = null, AliasName = null;
-            Permissions permissions = new Permissions();
-            int Counter = 0;
-            foreach (XmlNode childnode in attr.ChildNodes)
+            try
             {
-                switch (childnode.Name)
+                string Name = null, Path = null, AliasName = null;
+                Permissions permissions = new Permissions();
+                int Counter = 0;
+                foreach (XmlNode childnode in attr.ChildNodes)
                 {
-                    case "Name":
-                        Name = childnode.InnerText;
-                        Counter++;
-                        break;
-                    case "Path":
-                        Path = childnode.InnerText;
-                        Counter++;
-                        break;
-                    case "AliasName":
-                        AliasName = childnode.InnerText;
-                        Counter++;
-                        break;
-                    case "Dcreate":
-                        permissions.Dcreate = bool.Parse(childnode.InnerText);
-                        Counter++;
-                        break;
-                    case "DDelete":
-                        permissions.DDelete = bool.Parse(childnode.InnerText);
-                        Counter++;
-                        break;
-                    case "DList":
-                        permissions.DList = bool.Parse(childnode.InnerText);
-                        Counter++;
-                        break;
-                    case "FAppend":
-                        permissions.FAppend = bool.Parse(childnode.InnerText);
-                        Counter++;
-                        break;
-                    case "FDelete":
-                        permissions.FDelete = bool.Parse(childnode.InnerText);
-                        Counter++;
-                        break;
-                    case "FRead":
-                        permissions.FRead = bool.Parse(childnode.InnerText);
-                        Counter++;
-                        break;
-                    case "FWrite":
-                        permissions.FWrite = bool.Parse(childnode.InnerText);
-                        Counter++;
-                        break;
-                    default:
-                        throw new InvalidXMLExeption();
+                    switch (childnode.Name)
+                    {
+                        case "Name":
+                            Name = childnode.InnerText;
+                            Counter++;
+                            break;
+                        case "Path":
+                            Path = childnode.InnerText;
+                            Counter++;
+                            break;
+                        case "AliasName":
+                            AliasName = childnode.InnerText;
+                            Counter++;
+                            break;
+                        case "Dcreate":
+                            permissions.Dcreate = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+                        case "DDelete":
+                            permissions.DDelete = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+                        case "DList":
+                            permissions.DList = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+                        case "FAppend":
+                            permissions.FAppend = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+                        case "FDelete":
+                            permissions.FDelete = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+                        case "FRead":
+                            permissions.FRead = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+                        case "FWrite":
+                            permissions.FWrite = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+                        default:
+                            throw new InvalidXMLExeption();
+                    }
                 }
+                if (Counter != 10)
+                {
+                    throw new InvalidXMLExeption();
+                }
+                Task.Run(() => AddAlias(Name, Path, AliasName, permissions));
             }
-            if (Counter != 10)
+            catch(Exception e)
             {
-                throw new InvalidXMLExeption();
+                Log("UnwrapXmlAdd",e.Message);
             }
-            Task.Run(() => AddAlias(Name, Path, AliasName, permissions));
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine(DateTime.Now + "  Editing User with name - {Name} to group {Login}");
-            Console.ResetColor();
         }
-        static  private void AddAlias(string UserName, string Path, string AliasName, Permissions Perms)
+        static private void AddAlias(string UserName, string Path, string AliasName, Permissions Perms)
         {
             try
             {
@@ -407,7 +421,7 @@ namespace Client_ServerTest01
                 Log("AddAlias", ex.Message);
             }
         }
-        static void EditAliasPermissions(XmlNode attr)
+        static private void EditAliasPermissions(XmlNode attr)
         {
             try
             {
@@ -506,33 +520,40 @@ namespace Client_ServerTest01
                 Log("EditAliasPerms", ex.Message);
             }
         }
-        static void UnWrapXMLRemoveAlias(XmlNode attr)
+        static private void UnWrapXMLRemoveAlias(XmlNode attr)
         {
-            string Name = null, AliasName = null;
-            int Counter = 0;
-            foreach (XmlNode childnode in attr.ChildNodes)
+            try
             {
-                switch (childnode.Name)
+                string UserName = null, AliasName = null;
+                int Counter = 0;
+                foreach (XmlNode childnode in attr.ChildNodes)
                 {
-                    case "Name":
-                        Name = childnode.InnerText;
-                        Counter++;
-                        break;
-                    case "AliasName":
-                        AliasName = childnode.InnerText;
-                        Counter++;
-                        break;
-                    default:
-                        throw new InvalidXMLExeption();
+                    switch (childnode.Name)
+                    {
+                        case "Name":
+                            UserName = childnode.InnerText;
+                            Counter++;
+                            break;
+                        case "AliasName":
+                            AliasName = childnode.InnerText;
+                            Counter++;
+                            break;
+                        default:
+                            throw new InvalidXMLExeption();
+                    }
                 }
+                if (Counter != 2)
+                {
+                    throw new InvalidXMLExeption();
+                }
+                Task.Run(() => RemoveAlias(UserName, AliasName));
             }
-            if (Counter != 2)
+            catch (Exception ex)
             {
-                throw new InvalidXMLExeption();
+                Log("UnWrapXMLRemoveAlias", ex.Message);
             }
-            Task.Run(() => RemoveAlias(Name, AliasName));
         }
-        static void RemoveAlias(string UserName, string AliasName)
+        static private void RemoveAlias(string UserName, string AliasName)
         {
             try
             {
@@ -588,7 +609,6 @@ namespace Client_ServerTest01
                     XmlElement xRoot = XMLDoc.DocumentElement;
                     XmlNode attr = xRoot.Attributes.GetNamedItem("Method");
                     MethodName = attr.Value;
-                    Permissions permissions = new Permissions();
                     switch (MethodName)
                     {
                         case "Shutdown":
