@@ -34,11 +34,46 @@ namespace Client_ServerTest01
             System.Diagnostics.Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location);
             Environment.Exit(0);
         }
-        static private void CreateFTPUser(string UserName, string GroupName, string Password, string UserLogin, ushort SpeedLimit = 10240)
+        static private void CreateFTPUser(XmlNode attr)
         {
-            SpeedLimit Limit = new SpeedLimit 
+            int Counter = 0;
+            string Name = null, Group = null, Password = null, Login = null;
+            ushort Limit = 1024;
+            foreach (XmlNode childnode in attr.ChildNodes)
             {
-                ConstantSpeedLimit = SpeedLimit,
+                switch (childnode.Name)
+                {
+                    case "Name":
+                        Name = childnode.InnerText;
+                        Counter++;
+                        break;
+                    case "Group":
+                        Group = childnode.InnerText;
+                        Counter++;
+                        break;
+                    case "Password":
+                        Password = childnode.InnerText;
+                        Counter++;
+                        break;
+                    case "Login":
+                        Login = childnode.InnerText;
+                        Counter++;
+                        break;
+                    case "SpeedLimit":
+                        Limit = ushort.Parse(childnode.InnerText);
+                        Counter++;
+                        break;
+                    default:
+                        throw new InvalidXMLExeption();
+                }
+            }
+            if (Counter != 5)
+            {
+                throw new InvalidXMLExeption();
+            }
+            SpeedLimit SpeedLimit = new SpeedLimit 
+            {
+                ConstantSpeedLimit = Limit,
                 SpeedLimitType = SpeedLimitType.ConstantSpeedLimit,
             };
             try
@@ -49,8 +84,8 @@ namespace Client_ServerTest01
                 Directory.CreateDirectory(@"D:\FTP_accounts\{UserName}");
                 var CreatedUser = new User
                 {
-                    Comment = UserLogin,
-                    UserName = UserName,
+                    Comment = Login,
+                    UserName = Name,
                     SharedFolders = new List<SharedFolder>()
                     {
                         new SharedFolder()
@@ -59,52 +94,79 @@ namespace Client_ServerTest01
                             AccessRights = AccessRights.DirList | AccessRights.DirSubdirs | AccessRights.FileRead | AccessRights.FileWrite | AccessRights.IsHome| AccessRights.AutoCreate
                         }
                     },
-                    DownloadSpeedLimit = Limit,
-                    UploadSpeedLimit = Limit
+                    DownloadSpeedLimit = SpeedLimit,
+                    UploadSpeedLimit = SpeedLimit
                 };
                 CreatedUser.AllowedIPs.Add("192.168.10.101");
                 CreatedUser.AssignPassword(Password, fileZillaApi.ProtocolVersion);
                 Settings.Users.Add(CreatedUser);
                 fileZillaApi.SetAccountSettings(Settings);
-                if (GroupName != "No Groop")
+                if (Group != "No Groop")
                 {
-                    EditUserGroup(UserName, GroupName);
+                    EditUserGroup(Name, Group);
                 }
             }
             catch (Exception ex)
             {
                 Log("CreateUser", ex.Message);
             }
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine(DateTime.Now + "  Creating User with name - {Name}");
+            Console.ResetColor();
         }
-        static private void RemoveUser(string UserName)
+        static private void RemoveUser(XmlNode attr)
         {
             try
             {
+                string Name = null;
+                if (attr.ChildNodes.Count == 1 && attr.ChildNodes[0].Name == "Name")
+                {
+                    Name = attr.ChildNodes[0].InnerText;
+                }
+                else
+                {
+                    throw new InvalidXMLExeption();
+                }
                 var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
                 fileZillaApi.Connect(FileZillaPass);
                 var settings = fileZillaApi.GetAccountSettings();
-                var DeletMe = settings.Users.Find((User) => Equals(User.UserName, UserName));
+                var DeletMe = settings.Users.Find((User) => Equals(User.UserName, Name));
                 settings.Users.Remove(DeletMe);
                 fileZillaApi.SetAccountSettings(settings);
                 Directory.Delete(@"D:\FTP_accounts\{UserName}", true);
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(DateTime.Now + "  Removing User with name - {Name}");
+                Console.ResetColor();
             }
             catch (Exception ex)
             {
                 Log("RemoveUser", ex.Message);
             }
         }
-        static private void BanIp(string Ip)
+        static private void BanIp(XmlNode attr)
         {
             try
             {
+                string Name = null;
+                if (attr.ChildNodes.Count == 1 && attr.ChildNodes[0].Name == "IP")
+                {
+                    Name = attr.ChildNodes[0].InnerText;
+                }
+                else
+                {
+                    throw new InvalidXMLExeption();
+                }
                 var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
                 fileZillaApi.Connect(FileZillaPass);
-                var ConnectID = fileZillaApi.GetConnections().Find((x) => Equals(x.Ip, Ip)).ConnectionId;
+                var ConnectID = fileZillaApi.GetConnections().Find((x) => Equals(x.Ip, Name)).ConnectionId;
                 fileZillaApi.BanIp(ConnectID);
                 StreamWriter writer = new StreamWriter("\\BannedIp.Txt", true, System.Text.Encoding.UTF8);
-                writer.WriteLine(Ip);
+                writer.WriteLine(Name);
                 writer.Flush();
                 writer.Close();
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(DateTime.Now + "  Ban IP {Name}");
+                Console.ResetColor();
             }
             catch (Exception ex)
             {
@@ -130,27 +192,79 @@ namespace Client_ServerTest01
                 return null;
             }
         }
-        static private void EditUserSpeed(string UserName, ushort SpeedLimit)
+        static private void EditUserSpeed(XmlNode attr)
         {
             try
             {
-                SpeedLimit limit = new SpeedLimit
+                string Name = null;
+                ushort Limit = 1024;
+                int Counter = 0;
+                foreach (XmlNode childnode in attr.ChildNodes)
                 {
-                    ConstantSpeedLimit = SpeedLimit,
+                    switch (childnode.Name)
+                    {
+                        case "Name":
+                            Name = childnode.InnerText;
+                            Counter++;
+                            break;
+                        case "SpeedLimit":
+                            Limit = ushort.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+                        default:
+                            throw new InvalidXMLExeption();
+                    }
+                }
+                if (Counter != 2)
+                {
+                    throw new InvalidXMLExeption();
+                }
+                SpeedLimit SpeedLimit = new SpeedLimit
+                {
+                    ConstantSpeedLimit = Limit,
                     SpeedLimitType = SpeedLimitType.ConstantSpeedLimit,
                 };
                 var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
                 fileZillaApi.Connect(FileZillaPass);
                 var settings = fileZillaApi.GetAccountSettings();
-                var EditMe = settings.Users.Find((User) => Equals(User.UserName, UserName));
-                EditMe.UploadSpeedLimit = limit;
-                EditMe.DownloadSpeedLimit = limit;
+                var EditMe = settings.Users.Find((User) => Equals(User.UserName, Name));
+                EditMe.UploadSpeedLimit = SpeedLimit;
+                EditMe.DownloadSpeedLimit = SpeedLimit;
                 fileZillaApi.SetAccountSettings(settings);
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine(DateTime.Now + "  Editing speed for user {Name} : new speed - {Limit} Kbs");
+                Console.ResetColor();
             }
             catch (Exception ex)
             {
                 Log("BanIP", ex.Message);
             }
+        }
+        static void UnWrapEditGroup(XmlNode attr)
+        {
+            string Name = null, GroupName = null;
+            int Counter = 0;
+            foreach (XmlNode childnode in attr.ChildNodes)
+            {
+                switch (childnode.Name)
+                {
+                    case "Name":
+                        Name = childnode.InnerText;
+                        Counter++;
+                        break;
+                    case "GrupName":
+                        GroupName = childnode.InnerText;
+                        Counter++;
+                        break;
+                    default:
+                        throw new InvalidXMLExeption();
+                }
+            }
+            if (Counter != 2)
+            {
+                throw new InvalidXMLExeption();
+            }
+            Task.Run(() => EditUserGroup(Name, GroupName));
         }
         static private void EditUserGroup(string UserName, string Group)
         {
@@ -182,6 +296,68 @@ namespace Client_ServerTest01
                 Log("EditUser", ex.Message);
             }
 
+        }
+      static private void UnWrapXMLAlias(XmlNode attr)
+        {
+            string Name = null, Path = null, AliasName = null;
+            Permissions permissions = new Permissions();
+            int Counter = 0;
+            foreach (XmlNode childnode in attr.ChildNodes)
+            {
+                switch (childnode.Name)
+                {
+                    case "Name":
+                        Name = childnode.InnerText;
+                        Counter++;
+                        break;
+                    case "Path":
+                        Path = childnode.InnerText;
+                        Counter++;
+                        break;
+                    case "AliasName":
+                        AliasName = childnode.InnerText;
+                        Counter++;
+                        break;
+                    case "Dcreate":
+                        permissions.Dcreate = bool.Parse(childnode.InnerText);
+                        Counter++;
+                        break;
+                    case "DDelete":
+                        permissions.DDelete = bool.Parse(childnode.InnerText);
+                        Counter++;
+                        break;
+                    case "DList":
+                        permissions.DList = bool.Parse(childnode.InnerText);
+                        Counter++;
+                        break;
+                    case "FAppend":
+                        permissions.FAppend = bool.Parse(childnode.InnerText);
+                        Counter++;
+                        break;
+                    case "FDelete":
+                        permissions.FDelete = bool.Parse(childnode.InnerText);
+                        Counter++;
+                        break;
+                    case "FRead":
+                        permissions.FRead = bool.Parse(childnode.InnerText);
+                        Counter++;
+                        break;
+                    case "FWrite":
+                        permissions.FWrite = bool.Parse(childnode.InnerText);
+                        Counter++;
+                        break;
+                    default:
+                        throw new InvalidXMLExeption();
+                }
+            }
+            if (Counter != 10)
+            {
+                throw new InvalidXMLExeption();
+            }
+            Task.Run(() => AddAlias(Name, Path, AliasName, permissions));
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine(DateTime.Now + "  Editing User with name - {Name} to group {Login}");
+            Console.ResetColor();
         }
         static  private void AddAlias(string UserName, string Path, string AliasName, Permissions Perms)
         {
@@ -222,16 +398,70 @@ namespace Client_ServerTest01
                     AddMe.AccessRights |= AccessRights.FileWrite;
                 }
                 fileZillaApi.SetAccountSettings(settings);
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine(DateTime.Now + "  Addng alias \"{Login}\" to user {Name}");
+                Console.ResetColor();
             }
             catch (Exception ex)
             {
                 Log("AddAlias", ex.Message);
             }
         }
-        static void EditAliasPermissions(string UserName, string AliasName, Permissions Perms)
+        static void EditAliasPermissions(XmlNode attr)
         {
             try
             {
+                Permissions Perms = new Permissions();
+                int Counter = 0;
+                string UserName = null,AliasName = null;
+                foreach (XmlNode childnode in attr.ChildNodes)
+                {
+                    switch (childnode.Name)
+                    {
+                        case "Name":
+                            UserName = childnode.InnerText;
+                            Counter++;
+                            break;
+                        case "AliasName":
+                            AliasName = childnode.InnerText;
+                            Counter++;
+                            break;
+                        case "Dcreate":
+                            Perms.Dcreate = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+                        case "DDelete":
+                            Perms.DDelete = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+                        case "DList":
+                            Perms.DList = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+                        case "FAppend":
+                            Perms.FAppend = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+                        case "FDelete":
+                            Perms.FDelete = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+                        case "FRead":
+                            Perms.FRead = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+                        case "FWrite":
+                            Perms.FWrite = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+                        default:
+                            throw new InvalidXMLExeption();
+                    }
+                }
+                if (Counter != 9)
+                {
+                    throw new InvalidXMLExeption();
+                }
                 var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
                 fileZillaApi.Connect(FileZillaPass);
                 var Settings = fileZillaApi.GetAccountSettings();
@@ -267,11 +497,40 @@ namespace Client_ServerTest01
                     Editme.AccessRights |= AccessRights.FileWrite;
                 }
                 fileZillaApi.SetAccountSettings(Settings);
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine(DateTime.Now + "  Creating User with name - {Name}");
+                Console.ResetColor();
             }
             catch (Exception ex)
             {
                 Log("EditAliasPerms", ex.Message);
             }
+        }
+        static void UnWrapXMLRemoveAlias(XmlNode attr)
+        {
+            string Name = null, AliasName = null;
+            int Counter = 0;
+            foreach (XmlNode childnode in attr.ChildNodes)
+            {
+                switch (childnode.Name)
+                {
+                    case "Name":
+                        Name = childnode.InnerText;
+                        Counter++;
+                        break;
+                    case "AliasName":
+                        AliasName = childnode.InnerText;
+                        Counter++;
+                        break;
+                    default:
+                        throw new InvalidXMLExeption();
+                }
+            }
+            if (Counter != 2)
+            {
+                throw new InvalidXMLExeption();
+            }
+            Task.Run(() => RemoveAlias(Name, AliasName));
         }
         static void RemoveAlias(string UserName, string AliasName)
         {
@@ -294,6 +553,9 @@ namespace Client_ServerTest01
                         throw new Exception("Cant find this group!");
                     }
                 }
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine(DateTime.Now + "  Creating User with name - {Name}");
+                Console.ResetColor();
             }
             catch (Exception ex)
             {
@@ -318,7 +580,6 @@ namespace Client_ServerTest01
                 Console.WriteLine(DateTime.Now +"  Ready!");
                 while (ExitTrigger)
                 {
-                    int Counter = 0;
                     data = new byte[2560];
                     handler.Receive(data);
                     XmlDocument XMLDoc = new XmlDocument();
@@ -327,9 +588,7 @@ namespace Client_ServerTest01
                     XmlElement xRoot = XMLDoc.DocumentElement;
                     XmlNode attr = xRoot.Attributes.GetNamedItem("Method");
                     MethodName = attr.Value;
-                    string Name = null, Password = null, Login = null, Group = null;
                     Permissions permissions = new Permissions();
-                    ushort Limit = 0;
                     switch (MethodName)
                     {
                         case "Shutdown":
@@ -346,72 +605,15 @@ namespace Client_ServerTest01
                             throw new Exception("Restatring");
 
                         case "CreateUser":
-                            foreach (XmlNode childnode in attr.ChildNodes)
-                            {
-                                switch (childnode.Name)
-                                {
-                                    case "Name":
-                                        Name = childnode.InnerText;
-                                        Counter++;
-                                        break;
-                                    case "Group":
-                                        Group = childnode.InnerText;
-                                        Counter++;
-                                        break;
-                                    case "Password":
-                                        Password = childnode.InnerText;
-                                        Counter++;
-                                        break;
-                                    case "Login":
-                                        Login = childnode.InnerText;
-                                        Counter++;
-                                        break;
-                                    case "SpeedLimit":
-                                        Limit = ushort.Parse(childnode.InnerText);
-                                        Counter++;
-                                        break;
-                                    default:
-                                        throw new InvalidXMLExeption();
-                                }
-                            }
-                            if (Counter != 5)
-                            {
-                                throw new InvalidXMLExeption();
-                            }
-                            Task.Run(() => CreateFTPUser(Name,Group, Password, Login, Limit));
-                            Console.ForegroundColor = ConsoleColor.Green;
-                            Console.WriteLine(DateTime.Now + "  Creating User with name - {Name}");
-                            Console.ResetColor();
+                            Task.Run(() => CreateFTPUser(attr));
                             break;
 
-                        case "RemoveUser":
-                            if (attr.ChildNodes.Count == 1 && attr.ChildNodes[0].Name == "Name")
-                            {
-                                Name = attr.ChildNodes[0].InnerText;
-                            }
-                            else
-                            {
-                                throw new InvalidXMLExeption();
-                            }
-                            Task.Run(() => RemoveUser(Name));
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine(DateTime.Now + "  Removing User with name - {Name}");
-                            Console.ResetColor();
+                        case "RemoveUser":            
+                            Task.Run(() => RemoveUser(attr));
                             break;
 
                         case "BanIP":
-                            if (attr.ChildNodes.Count == 1 && attr.ChildNodes[0].Name == "IP")
-                            {
-                                Name = attr.ChildNodes[0].InnerText;
-                            }
-                            else
-                            {
-                                throw new InvalidXMLExeption();
-                            }
-                            Task.Run(() => BanIp(Name));
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine(DateTime.Now + "  Ban IP {Name}");
-                            Console.ResetColor();
+                            Task.Run(() => BanIp(attr));
                             break;
 
                         case "GetBannedIP":
@@ -431,198 +633,23 @@ namespace Client_ServerTest01
                             break;
 
                         case "EditSpeed":
-                            foreach (XmlNode childnode in attr.ChildNodes)
-                            {
-                                switch (childnode.Name)
-                                {
-                                    case "Name":
-                                        Name = childnode.InnerText;
-                                        Counter++;
-                                        break;
-                                    case "SpeedLimit":
-                                        Limit = ushort.Parse(childnode.InnerText);
-                                        Counter++;
-                                        break;
-                                    default:
-                                        throw new InvalidXMLExeption();
-                                }
-                            }
-                            if (Counter != 2)
-                            {
-                                throw new InvalidXMLExeption();
-                            }
-                            Task.Run(() => EditUserSpeed(Name, Limit));
-                            Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine(DateTime.Now + "  Editing speed for user {Name} : new speed - {Limit} Kbs");
-                            Console.ResetColor();
+                            Task.Run(() => EditUserSpeed(attr));
                             break;
 
                         case "AddAlias":
-                            foreach (XmlNode childnode in attr.ChildNodes)
-                            {
-                                switch (childnode.Name)
-                                {
-                                    case "Name":
-                                        Name = childnode.InnerText;
-                                        Counter++;
-                                        break;
-                                    case "Path":
-                                        Password = childnode.InnerText;
-                                        Counter++;
-                                        break;
-                                    case "AliasName":
-                                        Login = childnode.InnerText;
-                                        Counter++;
-                                        break;
-                                    case "Dcreate":
-                                        permissions.Dcreate = bool.Parse(childnode.InnerText);
-                                        Counter++;
-                                        break;
-                                    case "DDelete":
-                                        permissions.DDelete = bool.Parse(childnode.InnerText);
-                                        Counter++;
-                                        break;
-                                    case "DList":
-                                        permissions.DList = bool.Parse(childnode.InnerText);
-                                        Counter++;
-                                        break;
-                                    case "FAppend":
-                                        permissions.FAppend = bool.Parse(childnode.InnerText);
-                                        Counter++;
-                                        break;
-                                    case "FDelete":
-                                        permissions.FDelete = bool.Parse(childnode.InnerText);
-                                        Counter++;
-                                        break;
-                                    case "FRead":
-                                        permissions.FRead = bool.Parse(childnode.InnerText);
-                                        Counter++;
-                                        break;
-                                    case "FWrite":
-                                        permissions.FWrite = bool.Parse(childnode.InnerText);
-                                        Counter++;
-                                        break;
-                                    default:
-                                        throw new InvalidXMLExeption();
-                                }
-                            }
-                            if (Counter != 10)
-                            {
-                                throw new InvalidXMLExeption();
-                            }
-                            Task.Run(() => AddAlias(Name, Password, Login, permissions));
-                            Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine(DateTime.Now + "  Addng alias \"{Login}\" to user {Name}");
-                            Console.ResetColor();
+                            Task.Run(() => UnWrapXMLAlias(attr));
                             break;
 
                         case "EditAliasPerms":
-                            foreach (XmlNode childnode in attr.ChildNodes)
-                            {
-                                switch (childnode.Name)
-                                {
-                                    case "Name":
-                                        Name = childnode.InnerText;
-                                        Counter++;
-                                        break;
-                                    case "AliasName":
-                                        Login = childnode.InnerText;
-                                        Counter++;
-                                        break;
-                                    case "Dcreate":
-                                        permissions.Dcreate = bool.Parse(childnode.InnerText);
-                                        Counter++;
-                                        break;
-                                    case "DDelete":
-                                        permissions.DDelete = bool.Parse(childnode.InnerText);
-                                        Counter++;
-                                        break;
-                                    case "DList":
-                                        permissions.DList = bool.Parse(childnode.InnerText);
-                                        Counter++;
-                                        break;
-                                    case "FAppend":
-                                        permissions.FAppend = bool.Parse(childnode.InnerText);
-                                        Counter++;
-                                        break;
-                                    case "FDelete":
-                                        permissions.FDelete = bool.Parse(childnode.InnerText);
-                                        Counter++;
-                                        break;
-                                    case "FRead":
-                                        permissions.FRead = bool.Parse(childnode.InnerText);
-                                        Counter++;
-                                        break;
-                                    case "FWrite":
-                                        permissions.FWrite = bool.Parse(childnode.InnerText);
-                                        Counter++;
-                                        break;
-                                    default:
-                                        throw new InvalidXMLExeption();
-                                }
-                            }
-                            if (Counter != 9)
-                            {
-                                throw new InvalidXMLExeption();
-                            }
-                            Task.Run(() => EditAliasPermissions(Name, Login, permissions));
-                            Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine(DateTime.Now + "  Creating User with name - {Name}");
-                            Console.ResetColor();
+                            Task.Run(() => EditAliasPermissions(attr));
                             break;
 
                         case "RemoveAlias":
-                            foreach (XmlNode childnode in attr.ChildNodes)
-                            {
-                                switch (childnode.Name)
-                                {
-                                    case "Name":
-                                        Name = childnode.InnerText;
-                                        Counter++;
-                                        break;
-                                    case "AliasName":
-                                        Login = childnode.InnerText;
-                                        Counter++;
-                                        break;
-                                    default:
-                                        throw new InvalidXMLExeption();
-                                }
-                            }
-                            if (Counter != 2)
-                            {
-                                throw new InvalidXMLExeption();
-                            }
-                            Task.Run(() => RemoveAlias(Name, Login));
-                            Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine(DateTime.Now + "  Creating User with name - {Name}");
-                            Console.ResetColor();
+                            Task.Run(() => UnWrapXMLRemoveAlias(attr));
                             break;
 
                         case "EditGroup":
-                            foreach (XmlNode childnode in attr.ChildNodes)
-                            {
-                                switch (childnode.Name)
-                                {
-                                    case "Name":
-                                        Name = childnode.InnerText;
-                                        Counter++;
-                                        break;
-                                    case "GrupName":
-                                        Login = childnode.InnerText;
-                                        Counter++;
-                                        break;
-                                    default:
-                                        throw new InvalidXMLExeption();
-                                }
-                            }
-                            if (Counter != 2)
-                            {
-                                throw new InvalidXMLExeption();
-                            }
-                            Task.Run(() => EditUserGroup(Name, Login));
-                            Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine(DateTime.Now + "  Editing User with name - {Name} to group {Login}");
-                            Console.ResetColor();
+                            Task.Run(() => UnWrapEditGroup(attr));
                             break;
 
                         default:
