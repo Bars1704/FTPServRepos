@@ -10,7 +10,7 @@ using System.Xml;
 
 namespace Client_ServerTest01
 {
-    //TODO: //Проверить пути алиасов-групп и папок юзеров
+    //TODO: Проверить пути алиасов-групп и папок юзеров
     public class InvalidXMLExeption : Exception
     {
         public new string Message = "Invalid XML";
@@ -21,13 +21,13 @@ namespace Client_ServerTest01
     }
     class Server
     {
-        const int ServerPort = 2536;
+        const int ServerPort = 25360;
         const int FileZillaPort = 14147;
         const string FileZillaPass = "123456789";
         const string FileZillaIp = "127.0.0.1";
         static private void Log(string MethodName, string Error)
         {
-            StreamWriter writer = new StreamWriter("\\ErrorLog.txt", true, System.Text.Encoding.UTF8);
+            StreamWriter writer = new StreamWriter(Environment.CurrentDirectory + "\\ErrorLog.txt", true, System.Text.Encoding.UTF8);
             writer.WriteLine(DateTime.Now + " " + MethodName + ":  " + Error);
             writer.Flush();
             writer.Close();
@@ -37,16 +37,16 @@ namespace Client_ServerTest01
         static private void CreateFTPUser(XmlNode attr)
         {
             int Counter = 0;
-            string Name = null, Group = null, Password = null, Login = null;
+            string UserName = null, Group = null, Password = null, Login = null;
             ushort Limit = 1024;
             try
             {
-                foreach (XmlNode childnode in attr.ChildNodes)
+                foreach (XmlNode childnode in attr.Attributes)
                 {
                     switch (childnode.Name)
                     {
                         case "Name":
-                            Name = childnode.InnerText;
+                            UserName = childnode.InnerText;
                             Counter++;
                             break;
                         case "Group":
@@ -81,16 +81,16 @@ namespace Client_ServerTest01
                 var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
                 fileZillaApi.Connect(FileZillaPass);
                 var Settings = fileZillaApi.GetAccountSettings();
-                Directory.CreateDirectory(@"D:\FTP_accounts\{UserName}");
+                Directory.CreateDirectory(@"D:\FTP_accounts\" + UserName);
                 var CreatedUser = new User
                 {
                     Comment = Login,
-                    UserName = Name,
+                    UserName = UserName,
                     SharedFolders = new List<SharedFolder>()
                     {
                         new SharedFolder()
                         {
-                            Directory = @"D:\FTP_accounts\{Name}",
+                            Directory = @"D:\FTP_accounts\"+UserName,
                             AccessRights = AccessRights.DirList | AccessRights.DirSubdirs | AccessRights.FileRead | AccessRights.FileWrite | AccessRights.IsHome| AccessRights.AutoCreate
                         }
                     },
@@ -103,10 +103,10 @@ namespace Client_ServerTest01
                 fileZillaApi.SetAccountSettings(Settings);
                 if (Group != "No Groop")
                 {
-                    EditUserGroup(Name, Group);
+                    EditUserGroup(UserName, Group);
                 }
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine(DateTime.Now + "  Creating User with name - {Name}");
+                Console.WriteLine(DateTime.Now + "  Creating User with name - " + UserName);
                 Console.ResetColor();
             }
             catch (Exception ex)
@@ -118,10 +118,10 @@ namespace Client_ServerTest01
         {
             try
             {
-                string Name = null;
-                if (attr.ChildNodes.Count == 1 && attr.ChildNodes[0].Name == "Name")
+                string UserName = null;
+                if (attr.Attributes.Count == 1 && attr.Attributes[0].Name == "Name")
                 {
-                    Name = attr.ChildNodes[0].InnerText;
+                    UserName = attr.Attributes[0].InnerText;
                 }
                 else
                 {
@@ -130,12 +130,12 @@ namespace Client_ServerTest01
                 var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
                 fileZillaApi.Connect(FileZillaPass);
                 var settings = fileZillaApi.GetAccountSettings();
-                var DeletMe = settings.Users.Find((User) => Equals(User.UserName, Name));
+                var DeletMe = settings.Users.Find((User) => Equals(User.UserName, UserName));
                 settings.Users.Remove(DeletMe);
                 fileZillaApi.SetAccountSettings(settings);
-                Directory.Delete(@"D:\FTP_accounts\{UserName}", true);
+                Directory.Delete(@"D:\FTP_accounts\" + UserName, true);
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine(DateTime.Now + "  Removing User with name - {Name}");
+                Console.WriteLine(DateTime.Now + "  Removing User with name - " + UserName);
                 Console.ResetColor();
             }
             catch (Exception ex)
@@ -147,10 +147,10 @@ namespace Client_ServerTest01
         {
             try
             {
-                string Name = null;
-                if (attr.ChildNodes.Count == 1 && attr.ChildNodes[0].Name == "IP")
+                string UserName = null;
+                if (attr.Attributes.Count == 1 && attr.Attributes[0].Name == "IP")
                 {
-                    Name = attr.ChildNodes[0].InnerText;
+                    UserName = attr.Attributes[0].InnerText;
                 }
                 else
                 {
@@ -158,14 +158,14 @@ namespace Client_ServerTest01
                 }
                 var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
                 fileZillaApi.Connect(FileZillaPass);
-                var ConnectID = fileZillaApi.GetConnections().Find((x) => Equals(x.Ip, Name)).ConnectionId;
+                var ConnectID = fileZillaApi.GetConnections().Find((x) => Equals(x.Ip, UserName)).ConnectionId;
                 fileZillaApi.BanIp(ConnectID);
-                StreamWriter writer = new StreamWriter("\\BannedIp.Txt", true, System.Text.Encoding.UTF8);
-                writer.WriteLine(Name);
+                StreamWriter writer = new StreamWriter(Environment.CurrentDirectory + "\\BannedIp.Txt", true, Encoding.UTF8);
+                writer.WriteLine(UserName);
                 writer.Flush();
                 writer.Close();
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine(DateTime.Now + "  Ban IP {Name}");
+                Console.WriteLine(DateTime.Now + "  Ban IP " + UserName);
                 Console.ResetColor();
             }
             catch (Exception ex)
@@ -177,7 +177,7 @@ namespace Client_ServerTest01
         {
             try
             {
-                StreamReader reader = new StreamReader("\\BannedIp.Txt", System.Text.Encoding.UTF8);
+                StreamReader reader = new StreamReader(Environment.CurrentDirectory + "\\BannedIp.Txt", Encoding.UTF8);
                 reader.Close();
                 var Ip = new List<string>();
                 string currentIP;
@@ -196,15 +196,15 @@ namespace Client_ServerTest01
         {
             try
             {
-                string Name = null;
+                string UserName = null;
                 ushort Limit = 1024;
                 int Counter = 0;
-                foreach (XmlNode childnode in attr.ChildNodes)
+                foreach (XmlNode childnode in attr.Attributes)
                 {
                     switch (childnode.Name)
                     {
                         case "Name":
-                            Name = childnode.InnerText;
+                            UserName = childnode.InnerText;
                             Counter++;
                             break;
                         case "SpeedLimit":
@@ -227,12 +227,12 @@ namespace Client_ServerTest01
                 var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
                 fileZillaApi.Connect(FileZillaPass);
                 var settings = fileZillaApi.GetAccountSettings();
-                var EditMe = settings.Users.Find((User) => Equals(User.UserName, Name));
+                var EditMe = settings.Users.Find((User) => Equals(User.UserName, UserName));
                 EditMe.UploadSpeedLimit = SpeedLimit;
                 EditMe.DownloadSpeedLimit = SpeedLimit;
                 fileZillaApi.SetAccountSettings(settings);
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine(DateTime.Now + "  Editing speed for user {Name} : new speed - {Limit} Kbs");
+                Console.WriteLine(DateTime.Now + "  Editing speed for user " + UserName +" : new speed - "+Limit+" Kbs");
                 Console.ResetColor();
             }
             catch (Exception ex)
@@ -244,14 +244,14 @@ namespace Client_ServerTest01
         {
             try
             {
-                string Name = null, GroupName = null;
+                string UserName = null, GroupName = null;
                 int Counter = 0;
-                foreach (XmlNode childnode in attr.ChildNodes)
+                foreach (XmlNode childnode in attr.Attributes)
                 {
                     switch (childnode.Name)
                     {
                         case "Name":
-                            Name = childnode.InnerText;
+                            UserName = childnode.InnerText;
                             Counter++;
                             break;
                         case "GrupName":
@@ -266,7 +266,7 @@ namespace Client_ServerTest01
                 {
                     throw new InvalidXMLExeption();
                 }
-                Task.Run(() => EditUserGroup(Name, GroupName));
+                Task.Run(() => EditUserGroup(UserName, GroupName));
             }
             catch (Exception ex)
             {
@@ -298,7 +298,7 @@ namespace Client_ServerTest01
                         break;
                 }
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine(DateTime.Now + "  Editing User with name - {Name} to group {Login}");
+                Console.WriteLine(DateTime.Now + "  Editing User with name - " + UserName + " to group " + Group);
                 Console.ResetColor();
             }
             catch (Exception ex)
@@ -314,7 +314,7 @@ namespace Client_ServerTest01
                 string Name = null, Path = null, AliasName = null;
                 Permissions permissions = new Permissions();
                 int Counter = 0;
-                foreach (XmlNode childnode in attr.ChildNodes)
+                foreach (XmlNode childnode in attr.Attributes)
                 {
                     switch (childnode.Name)
                     {
@@ -413,7 +413,7 @@ namespace Client_ServerTest01
                 }
                 fileZillaApi.SetAccountSettings(settings);
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine(DateTime.Now + "  Addng alias \"{Login}\" to user {Name}");
+                Console.WriteLine(DateTime.Now + "  Addng alias \""+ AliasName +"\" to user" + UserName);
                 Console.ResetColor();
             }
             catch (Exception ex)
@@ -428,7 +428,7 @@ namespace Client_ServerTest01
                 Permissions Perms = new Permissions();
                 int Counter = 0;
                 string UserName = null,AliasName = null;
-                foreach (XmlNode childnode in attr.ChildNodes)
+                foreach (XmlNode childnode in attr.Attributes)
                 {
                     switch (childnode.Name)
                     {
@@ -512,7 +512,7 @@ namespace Client_ServerTest01
                 }
                 fileZillaApi.SetAccountSettings(Settings);
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine(DateTime.Now + "  Creating User with name - {Name}");
+                Console.WriteLine(DateTime.Now + "Edit permissions to User" + UserName + "in alias" + AliasName);
                 Console.ResetColor();
             }
             catch (Exception ex)
@@ -526,7 +526,7 @@ namespace Client_ServerTest01
             {
                 string UserName = null, AliasName = null;
                 int Counter = 0;
-                foreach (XmlNode childnode in attr.ChildNodes)
+                foreach (XmlNode childnode in attr.Attributes)
                 {
                     switch (childnode.Name)
                     {
@@ -575,7 +575,7 @@ namespace Client_ServerTest01
                     }
                 }
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine(DateTime.Now + "  Creating User with name - {Name}");
+                Console.WriteLine(DateTime.Now + "  Removing alias \"" + AliasName + "\"from user  " + UserName);
                 Console.ResetColor();
             }
             catch (Exception ex)
@@ -587,7 +587,7 @@ namespace Client_ServerTest01
         {
             string MethodName = "Main";
             byte[] data;
-            Console.WriteLine("Start");
+            Console.WriteLine(DateTime.Now + "Start");
             bool ExitTrigger = true;
             try
             {
@@ -597,18 +597,18 @@ namespace Client_ServerTest01
                 Console.WriteLine(DateTime.Now  + "  Bilding");
                 listenSocket.Listen(100);
                 Console.WriteLine(DateTime.Now +  "  Listening");
-                Socket handler = listenSocket.Accept();
-                Console.WriteLine(DateTime.Now +"  Ready!");
+
                 while (ExitTrigger)
                 {
-                    data = new byte[2560];
+                    Socket handler = listenSocket.Accept();
+                    data = new byte[25600];
                     handler.Receive(data);
                     XmlDocument XMLDoc = new XmlDocument();
                     string xml = Encoding.UTF8.GetString(data);
                     XMLDoc.LoadXml(xml);
                     XmlElement xRoot = XMLDoc.DocumentElement;
-                    XmlNode attr = xRoot.Attributes.GetNamedItem("Method");
-                    MethodName = attr.Value;
+                    XmlNode attr = xRoot;
+                    MethodName = attr.InnerText;
                     switch (MethodName)
                     {
                         case "Shutdown":
