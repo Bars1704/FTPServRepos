@@ -7,8 +7,7 @@ namespace Client_ServerTest01
     {
         public string Extension { get; set; }
         public bool InstantVuive { get; set; }
-
-        public File(FileInfo finfo, string UserName)
+        public File(FileInfo finfo, string UserName) : base(UserName)
         {
             Extension = finfo.Extension;
             InstantVuive = false;
@@ -17,10 +16,7 @@ namespace Client_ServerTest01
             Path = finfo.FullName;
             Owner = UserName;
             CreateTime = finfo.CreationTime;
-            ShareTime = DateTime.MinValue;
-            Colour = Colours.Nocolour;
         }
-
         public File(FileInfo finfo, File OldFile)
         {
             Extension = finfo.Extension;

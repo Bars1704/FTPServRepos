@@ -10,20 +10,15 @@ namespace Client_ServerTest01
     {
         public int FilesInsideCount { get; set; }
         public List<Unit> Files { get; set; }
-
-        public Folder(DirectoryInfo dinfo, string UserName, int FileCount)
+        public Folder(DirectoryInfo dinfo, string UserName, int FileCount):base(UserName)
         {
             Name = dinfo.Name;
             Path = dinfo.FullName;
-            Owner = UserName;
             CreateTime = dinfo.CreationTime;
-            ShareTime = DateTime.MinValue;
-            Colour = Colours.Nocolour;
             Size = GetSize(dinfo);
             Files = GetFilesInside(dinfo, UserName, ref FileCount);
             FilesInsideCount = FileCount;
         }
-
         public Folder(DirectoryInfo dinfo, int FileCount, Folder OldFolder)
         {
             Name = dinfo.Name;
@@ -33,11 +28,9 @@ namespace Client_ServerTest01
             ShareTime = OldFolder.ShareTime;
             Colour = OldFolder.Colour;
             Size = GetSize(dinfo);
-            Files = GetFilesInside(dinfo, OldFolder.Owner, ref FileCount, OldFolder);
-
+            Files = GetFilesInside(dinfo, ref FileCount, OldFolder);
             FilesInsideCount = FileCount;
         }
-
         private long GetSize(DirectoryInfo dinfo)
         {
             long Size = 0;
@@ -53,7 +46,6 @@ namespace Client_ServerTest01
             }
             return Size;
         }
-
         private List<Unit> GetFilesInside(DirectoryInfo dinfo, string UserName, ref int FilesCount)
         {
             var Files = dinfo.GetFiles();
@@ -70,8 +62,7 @@ namespace Client_ServerTest01
             }
             return AllFiles;
         }
-
-        private List<Unit> GetFilesInside(DirectoryInfo dinfo, string UserName, ref int FilesCount, Folder OldFolder)
+        private List<Unit> GetFilesInside(DirectoryInfo dinfo, ref int FilesCount, Folder OldFolder)
         {
             var Files = dinfo.GetFiles();
             var Dirs = dinfo.GetDirectories();
@@ -89,7 +80,6 @@ namespace Client_ServerTest01
             }
             return AllFiles;
         }
-
         public void Serialization(string Path, Folder rootFile, string UserName)
         {
             BinaryFormatter Serializer = new BinaryFormatter();

@@ -1,12 +1,12 @@
 ﻿using Miracle.FileZilla.Api;
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using System.Net.Sockets;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using System;
 
 namespace Client_ServerTest01
 {
@@ -14,19 +14,16 @@ namespace Client_ServerTest01
     public class InvalidXMLExeption : Exception
     {
         public new string Message = "Invalid XML";
-
         public InvalidXMLExeption()
         {
         }
     }
-
     internal class Server
     {
-        private const int ServerPort = 25360;
         private const int FileZillaPort = 14147;
-        private const string FileZillaPass = "123456789";
+        private const int ServerPort = 25360;
         private const string FileZillaIp = "127.0.0.1";
-
+        private const string FileZillaPass = "123456789";
         private static void Log(string MethodName, string Error)
         {
             StreamWriter writer = new StreamWriter(Environment.CurrentDirectory + "\\ErrorLog.txt", true, System.Text.Encoding.UTF8);
@@ -36,7 +33,84 @@ namespace Client_ServerTest01
             System.Diagnostics.Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location);
             Environment.Exit(0);
         }
-
+        private static void AddAlias(string UserName, string Path, string AliasName, Permissions Perms)
+        {
+            try
+            {
+                var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
+                fileZillaApi.Connect(FileZillaPass);
+                var settings = fileZillaApi.GetAccountSettings();
+                var EditMe = settings.Users.Find((User) => Equals(User.UserName, UserName));
+                SharedFolder AddMe = new SharedFolder { Directory = Path, Aliases = new List<string> { AliasName } };
+                AddMe.AccessRights = AccessRights.DirSubdirs;
+                if (Perms.Dcreate)
+                {
+                    AddMe.AccessRights |= AccessRights.DirCreate;
+                }
+                if (Perms.DDelete)
+                {
+                    AddMe.AccessRights |= AccessRights.DirDelete;
+                }
+                if (Perms.DList)
+                {
+                    AddMe.AccessRights |= AccessRights.DirList;
+                }
+                if (Perms.FAppend)
+                {
+                    AddMe.AccessRights |= AccessRights.FileAppend;
+                }
+                if (Perms.FDelete)
+                {
+                    AddMe.AccessRights |= AccessRights.FileDelete;
+                }
+                if (Perms.FRead)
+                {
+                    AddMe.AccessRights |= AccessRights.FileRead;
+                }
+                if (Perms.FWrite)
+                {
+                    AddMe.AccessRights |= AccessRights.FileWrite;
+                }
+                fileZillaApi.SetAccountSettings(settings);
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine(DateTime.Now + "  Addng alias \"" + AliasName + "\" to user" + UserName);
+                Console.ResetColor();
+            }
+            catch (Exception ex)
+            {
+                Log("AddAlias", ex.Message);
+            }
+        }
+        private static void BanIp(XmlNode attr)
+        {
+            try
+            {
+                string UserName = null;
+                if (attr.Attributes.Count == 1 && attr.Attributes[0].Name == "IP")
+                {
+                    UserName = attr.Attributes[0].InnerText;
+                }
+                else
+                {
+                    throw new InvalidXMLExeption();
+                }
+                var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
+                fileZillaApi.Connect(FileZillaPass);
+                var ConnectID = fileZillaApi.GetConnections().Find((x) => Equals(x.Ip, UserName)).ConnectionId;
+                fileZillaApi.BanIp(ConnectID);
+                StreamWriter writer = new StreamWriter(Environment.CurrentDirectory + "\\BannedIp.Txt", true, Encoding.UTF8);
+                writer.WriteLine(UserName);
+                writer.Flush();
+                writer.Close();
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(DateTime.Now + "  Ban IP " + UserName);
+                Console.ResetColor();
+            }
+            catch (Exception ex)
+            {
+                Log("BanIP", ex.Message);
+            }
+        }
         private static void CreateFTPUser(XmlNode attr)
         {
             int Counter = 0;
@@ -122,337 +196,6 @@ namespace Client_ServerTest01
                 Log("CreateUser", ex.Message);
             }
         }
-
-        private static void RemoveUser(XmlNode attr)
-        {
-            try
-            {
-                string UserName = null;
-                if (attr.Attributes.Count == 1 && attr.Attributes[0].Name == "Name")
-                {
-                    UserName = attr.Attributes[0].InnerText;
-                }
-                else
-                {
-                    throw new InvalidXMLExeption();
-                }
-                var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
-                fileZillaApi.Connect(FileZillaPass);
-                var settings = fileZillaApi.GetAccountSettings();
-                var DeletMe = settings.Users.Find((User) => Equals(User.UserName, UserName));
-                settings.Users.Remove(DeletMe);
-                fileZillaApi.SetAccountSettings(settings);
-                Directory.Delete(@"D:\FTP_accounts\" + UserName, true);
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine(DateTime.Now + "  Removing User with name - " + UserName);
-                Console.ResetColor();
-            }
-            catch (Exception ex)
-            {
-                Log("RemoveUser", ex.Message);
-            }
-        }
-
-        private static void BanIp(XmlNode attr)
-        {
-            try
-            {
-                string UserName = null;
-                if (attr.Attributes.Count == 1 && attr.Attributes[0].Name == "IP")
-                {
-                    UserName = attr.Attributes[0].InnerText;
-                }
-                else
-                {
-                    throw new InvalidXMLExeption();
-                }
-                var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
-                fileZillaApi.Connect(FileZillaPass);
-                var ConnectID = fileZillaApi.GetConnections().Find((x) => Equals(x.Ip, UserName)).ConnectionId;
-                fileZillaApi.BanIp(ConnectID);
-                StreamWriter writer = new StreamWriter(Environment.CurrentDirectory + "\\BannedIp.Txt", true, Encoding.UTF8);
-                writer.WriteLine(UserName);
-                writer.Flush();
-                writer.Close();
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine(DateTime.Now + "  Ban IP " + UserName);
-                Console.ResetColor();
-            }
-            catch (Exception ex)
-            {
-                Log("BanIP", ex.Message);
-            }
-        }
-
-        private static List<string> GetBannedIps()
-        {
-            try
-            {
-                StreamReader reader = new StreamReader(Environment.CurrentDirectory + "\\BannedIp.Txt", Encoding.UTF8);
-                reader.Close();
-                var Ip = new List<string>();
-                string currentIP;
-                while ((currentIP = reader.ReadLine()) != null)
-                {
-                    Ip.Add(currentIP);
-                }
-                return Ip;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private static void EditUserSpeed(XmlNode attr)
-        {
-            try
-            {
-                string UserName = null;
-                ushort Limit = 1024;
-                int Counter = 0;
-                foreach (XmlNode childnode in attr.Attributes)
-                {
-                    switch (childnode.Name)
-                    {
-                        case "Name":
-                            UserName = childnode.InnerText;
-                            Counter++;
-                            break;
-
-                        case "SpeedLimit":
-                            Limit = ushort.Parse(childnode.InnerText);
-                            Counter++;
-                            break;
-
-                        default:
-                            throw new InvalidXMLExeption();
-                    }
-                }
-                if (Counter != 2)
-                {
-                    throw new InvalidXMLExeption();
-                }
-                SpeedLimit SpeedLimit = new SpeedLimit
-                {
-                    ConstantSpeedLimit = Limit,
-                    SpeedLimitType = SpeedLimitType.ConstantSpeedLimit,
-                };
-                var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
-                fileZillaApi.Connect(FileZillaPass);
-                var settings = fileZillaApi.GetAccountSettings();
-                var EditMe = settings.Users.Find((User) => Equals(User.UserName, UserName));
-                EditMe.UploadSpeedLimit = SpeedLimit;
-                EditMe.DownloadSpeedLimit = SpeedLimit;
-                fileZillaApi.SetAccountSettings(settings);
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine(DateTime.Now + "  Editing speed for user " + UserName + " : new speed - " + Limit + " Kbs");
-                Console.ResetColor();
-            }
-            catch (Exception ex)
-            {
-                Log("BanIP", ex.Message);
-            }
-        }
-
-        private static void UnWrapEditGroup(XmlNode attr)
-        {
-            try
-            {
-                string UserName = null, GroupName = null;
-                int Counter = 0;
-                foreach (XmlNode childnode in attr.Attributes)
-                {
-                    switch (childnode.Name)
-                    {
-                        case "Name":
-                            UserName = childnode.InnerText;
-                            Counter++;
-                            break;
-
-                        case "GrupName":
-                            GroupName = childnode.InnerText;
-                            Counter++;
-                            break;
-
-                        default:
-                            throw new InvalidXMLExeption();
-                    }
-                }
-                if (Counter != 2)
-                {
-                    throw new InvalidXMLExeption();
-                }
-                Task.Run(() => EditUserGroup(UserName, GroupName));
-            }
-            catch (Exception ex)
-            {
-                Log("UnWrapEditGroup", ex.Message);
-            }
-        }
-
-        private static void EditUserGroup(string UserName, string Group)
-        {
-            try
-            {
-                var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
-                fileZillaApi.Connect(FileZillaPass);
-                var settings = fileZillaApi.GetAccountSettings();
-                var EditMe = settings.Users.Find((User) => Equals(User.UserName, UserName));
-                EditMe.GroupName = Group;
-                RemoveAlias(UserName, "Films");
-                RemoveAlias(UserName, "Soft");
-                switch (Group)
-                {
-                    case "Films":
-                        AddAlias(UserName, @"\D\Films", "Films", new Permissions());
-                        break;
-
-                    case "Soft":
-                        AddAlias(UserName, @"\D\Soft", "Soft", new Permissions());
-                        break;
-
-                    case "Films + Soft":
-                        AddAlias(UserName, @"\D\Films", "Films", new Permissions());
-                        AddAlias(UserName, @"\D\Soft", "Soft", new Permissions());
-                        break;
-                }
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine(DateTime.Now + "  Editing User with name - " + UserName + " to group " + Group);
-                Console.ResetColor();
-            }
-            catch (Exception ex)
-            {
-                Log("EditUser", ex.Message);
-            }
-        }
-
-        private static void UnWrapXMLAlias(XmlNode attr)
-        {
-            try
-            {
-                string Name = null, Path = null, AliasName = null;
-                Permissions permissions = new Permissions();
-                int Counter = 0;
-                foreach (XmlNode childnode in attr.Attributes)
-                {
-                    switch (childnode.Name)
-                    {
-                        case "Name":
-                            Name = childnode.InnerText;
-                            Counter++;
-                            break;
-
-                        case "Path":
-                            Path = childnode.InnerText;
-                            Counter++;
-                            break;
-
-                        case "AliasName":
-                            AliasName = childnode.InnerText;
-                            Counter++;
-                            break;
-
-                        case "Dcreate":
-                            permissions.Dcreate = bool.Parse(childnode.InnerText);
-                            Counter++;
-                            break;
-
-                        case "DDelete":
-                            permissions.DDelete = bool.Parse(childnode.InnerText);
-                            Counter++;
-                            break;
-
-                        case "DList":
-                            permissions.DList = bool.Parse(childnode.InnerText);
-                            Counter++;
-                            break;
-
-                        case "FAppend":
-                            permissions.FAppend = bool.Parse(childnode.InnerText);
-                            Counter++;
-                            break;
-
-                        case "FDelete":
-                            permissions.FDelete = bool.Parse(childnode.InnerText);
-                            Counter++;
-                            break;
-
-                        case "FRead":
-                            permissions.FRead = bool.Parse(childnode.InnerText);
-                            Counter++;
-                            break;
-
-                        case "FWrite":
-                            permissions.FWrite = bool.Parse(childnode.InnerText);
-                            Counter++;
-                            break;
-
-                        default:
-                            throw new InvalidXMLExeption();
-                    }
-                }
-                if (Counter != 10)
-                {
-                    throw new InvalidXMLExeption();
-                }
-                Task.Run(() => AddAlias(Name, Path, AliasName, permissions));
-            }
-            catch (Exception e)
-            {
-                Log("UnwrapXmlAdd", e.Message);
-            }
-        }
-
-        private static void AddAlias(string UserName, string Path, string AliasName, Permissions Perms)
-        {
-            try
-            {
-                var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
-                fileZillaApi.Connect(FileZillaPass);
-                var settings = fileZillaApi.GetAccountSettings();
-                var EditMe = settings.Users.Find((User) => Equals(User.UserName, UserName));
-                SharedFolder AddMe = new SharedFolder { Directory = Path, Aliases = new List<string> { AliasName } };
-                AddMe.AccessRights = AccessRights.DirSubdirs;
-                if (Perms.Dcreate)
-                {
-                    AddMe.AccessRights |= AccessRights.DirCreate;
-                }
-                if (Perms.DDelete)
-                {
-                    AddMe.AccessRights |= AccessRights.DirDelete;
-                }
-                if (Perms.DList)
-                {
-                    AddMe.AccessRights |= AccessRights.DirList;
-                }
-                if (Perms.FAppend)
-                {
-                    AddMe.AccessRights |= AccessRights.FileAppend;
-                }
-                if (Perms.FDelete)
-                {
-                    AddMe.AccessRights |= AccessRights.FileDelete;
-                }
-                if (Perms.FRead)
-                {
-                    AddMe.AccessRights |= AccessRights.FileRead;
-                }
-                if (Perms.FWrite)
-                {
-                    AddMe.AccessRights |= AccessRights.FileWrite;
-                }
-                fileZillaApi.SetAccountSettings(settings);
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine(DateTime.Now + "  Addng alias \"" + AliasName + "\" to user" + UserName);
-                Console.ResetColor();
-            }
-            catch (Exception ex)
-            {
-                Log("AddAlias", ex.Message);
-            }
-        }
-
         private static void EditAliasPermissions(XmlNode attr)
         {
             try
@@ -561,8 +304,282 @@ namespace Client_ServerTest01
                 Log("EditAliasPerms", ex.Message);
             }
         }
+        private static void EditUserGroup(string UserName, string Group)
+        {
+            try
+            {
+                var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
+                fileZillaApi.Connect(FileZillaPass);
+                var settings = fileZillaApi.GetAccountSettings();
+                var EditMe = settings.Users.Find((User) => Equals(User.UserName, UserName));
+                EditMe.GroupName = Group;
+                RemoveAlias(UserName, "Films");
+                RemoveAlias(UserName, "Soft");
+                switch (Group)
+                {
+                    case "Films":
+                        AddAlias(UserName, @"\D\Films", "Films", new Permissions());
+                        break;
 
-        private static void UnWrapXMLRemoveAlias(XmlNode attr)
+                    case "Soft":
+                        AddAlias(UserName, @"\D\Soft", "Soft", new Permissions());
+                        break;
+
+                    case "Films + Soft":
+                        AddAlias(UserName, @"\D\Films", "Films", new Permissions());
+                        AddAlias(UserName, @"\D\Soft", "Soft", new Permissions());
+                        break;
+                }
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine(DateTime.Now + "  Editing User with name - " + UserName + " to group " + Group);
+                Console.ResetColor();
+            }
+            catch (Exception ex)
+            {
+                Log("EditUser", ex.Message);
+            }
+        }
+        private static void EditUserSpeed(XmlNode attr)
+        {
+            try
+            {
+                string UserName = null;
+                ushort Limit = 1024;
+                int Counter = 0;
+                foreach (XmlNode childnode in attr.Attributes)
+                {
+                    switch (childnode.Name)
+                    {
+                        case "Name":
+                            UserName = childnode.InnerText;
+                            Counter++;
+                            break;
+
+                        case "SpeedLimit":
+                            Limit = ushort.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+
+                        default:
+                            throw new InvalidXMLExeption();
+                    }
+                }
+                if (Counter != 2)
+                {
+                    throw new InvalidXMLExeption();
+                }
+                SpeedLimit SpeedLimit = new SpeedLimit
+                {
+                    ConstantSpeedLimit = Limit,
+                    SpeedLimitType = SpeedLimitType.ConstantSpeedLimit,
+                };
+                var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
+                fileZillaApi.Connect(FileZillaPass);
+                var settings = fileZillaApi.GetAccountSettings();
+                var EditMe = settings.Users.Find((User) => Equals(User.UserName, UserName));
+                EditMe.UploadSpeedLimit = SpeedLimit;
+                EditMe.DownloadSpeedLimit = SpeedLimit;
+                fileZillaApi.SetAccountSettings(settings);
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine(DateTime.Now + "  Editing speed for user " + UserName + " : new speed - " + Limit + " Kbs");
+                Console.ResetColor();
+            }
+            catch (Exception ex)
+            {
+                Log("BanIP", ex.Message);
+            }
+        }
+        private static List<string> GetBannedIps()
+        {
+            try
+            {
+                StreamReader reader = new StreamReader(Environment.CurrentDirectory + "\\BannedIp.Txt", Encoding.UTF8);
+                reader.Close();
+                var Ip = new List<string>();
+                string currentIP;
+                while ((currentIP = reader.ReadLine()) != null)
+                {
+                    Ip.Add(currentIP);
+                }
+                return Ip;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+        private static void RemoveAlias(string UserName, string AliasName)
+        {
+            try
+            {
+                var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
+                fileZillaApi.Connect(FileZillaPass);
+                var settings = fileZillaApi.GetAccountSettings();
+                var User = settings.Users.Find((CurrUser) => Equals(CurrUser.UserName, UserName));
+                SharedFolder Editme = User.SharedFolders.Find((Folder) => Folder.Aliases.Contains(AliasName));
+                if (Editme != null)
+                {
+                    User.SharedFolders.Remove(Editme);
+                    fileZillaApi.SetAccountSettings(settings);
+                }
+                else
+                {
+                    if (AliasName != "Soft" && AliasName != "Films")
+                    {
+                        throw new Exception("Cant find this group!");
+                    }
+                }
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine(DateTime.Now + "  Removing alias \"" + AliasName + "\"from user  " + UserName);
+                Console.ResetColor();
+            }
+            catch (Exception ex)
+            {
+                Log("RemoveAlias", ex.Message);
+            }
+        }
+
+        private static void RemoveUser(XmlNode attr)
+        {
+            try
+            {
+                string UserName = null;
+                if (attr.Attributes.Count == 1 && attr.Attributes[0].Name == "Name")
+                {
+                    UserName = attr.Attributes[0].InnerText;
+                }
+                else
+                {
+                    throw new InvalidXMLExeption();
+                }
+                var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
+                fileZillaApi.Connect(FileZillaPass);
+                var settings = fileZillaApi.GetAccountSettings();
+                var DeletMe = settings.Users.Find((User) => Equals(User.UserName, UserName));
+                settings.Users.Remove(DeletMe);
+                fileZillaApi.SetAccountSettings(settings);
+                Directory.Delete(@"D:\FTP_accounts\" + UserName, true);
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(DateTime.Now + "  Removing User with name - " + UserName);
+                Console.ResetColor();
+            }
+            catch (Exception ex)
+            {
+                Log("RemoveUser", ex.Message);
+            }
+        }
+        private static void UnWrapEditGroup(XmlNode attr)
+        {
+            try
+            {
+                string UserName = null, GroupName = null;
+                int Counter = 0;
+                foreach (XmlNode childnode in attr.Attributes)
+                {
+                    switch (childnode.Name)
+                    {
+                        case "Name":
+                            UserName = childnode.InnerText;
+                            Counter++;
+                            break;
+
+                        case "GrupName":
+                            GroupName = childnode.InnerText;
+                            Counter++;
+                            break;
+
+                        default:
+                            throw new InvalidXMLExeption();
+                    }
+                }
+                if (Counter != 2)
+                {
+                    throw new InvalidXMLExeption();
+                }
+                Task.Run(() => EditUserGroup(UserName, GroupName));
+            }
+            catch (Exception ex)
+            {
+                Log("UnWrapEditGroup", ex.Message);
+            }
+        }
+        private static void UnWrapXMLAlias(XmlNode attr)
+        {
+            try
+            {
+                string Name = null, Path = null, AliasName = null;
+                Permissions permissions = new Permissions();
+                int Counter = 0;
+                foreach (XmlNode childnode in attr.Attributes)
+                {
+                    switch (childnode.Name)
+                    {
+                        case "Name":
+                            Name = childnode.InnerText;
+                            Counter++;
+                            break;
+
+                        case "Path":
+                            Path = childnode.InnerText;
+                            Counter++;
+                            break;
+
+                        case "AliasName":
+                            AliasName = childnode.InnerText;
+                            Counter++;
+                            break;
+
+                        case "Dcreate":
+                            permissions.Dcreate = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+
+                        case "DDelete":
+                            permissions.DDelete = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+
+                        case "DList":
+                            permissions.DList = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+
+                        case "FAppend":
+                            permissions.FAppend = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+
+                        case "FDelete":
+                            permissions.FDelete = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+
+                        case "FRead":
+                            permissions.FRead = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+
+                        case "FWrite":
+                            permissions.FWrite = bool.Parse(childnode.InnerText);
+                            Counter++;
+                            break;
+
+                        default:
+                            throw new InvalidXMLExeption();
+                    }
+                }
+                if (Counter != 10)
+                {
+                    throw new InvalidXMLExeption();
+                }
+                Task.Run(() => AddAlias(Name, Path, AliasName, permissions));
+            }
+            catch (Exception e)
+            {
+                Log("UnwrapXmlAdd", e.Message);
+            }
+        }
+         void UnWrapXMLRemoveAlias(XmlNode attr)
         {
             try
             {
@@ -597,38 +614,6 @@ namespace Client_ServerTest01
                 Log("UnWrapXMLRemoveAlias", ex.Message);
             }
         }
-
-        private static void RemoveAlias(string UserName, string AliasName)
-        {
-            try
-            {
-                var fileZillaApi = new FileZillaApi(IPAddress.Parse(FileZillaIp), FileZillaPort);
-                fileZillaApi.Connect(FileZillaPass);
-                var settings = fileZillaApi.GetAccountSettings();
-                var User = settings.Users.Find((CurrUser) => Equals(CurrUser.UserName, UserName));
-                SharedFolder Editme = User.SharedFolders.Find((Folder) => Folder.Aliases.Contains(AliasName));
-                if (Editme != null)
-                {
-                    User.SharedFolders.Remove(Editme);
-                    fileZillaApi.SetAccountSettings(settings);
-                }
-                else
-                {
-                    if (AliasName != "Soft" && AliasName != "Films")
-                    {
-                        throw new Exception("Cant find this group!");
-                    }
-                }
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine(DateTime.Now + "  Removing alias \"" + AliasName + "\"from user  " + UserName);
-                Console.ResetColor();
-            }
-            catch (Exception ex)
-            {
-                Log("RemoveAlias", ex.Message);
-            }
-        }
-
         private static void Main(string[] args)
         {
             string MethodName = "Main";
