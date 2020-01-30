@@ -14,18 +14,20 @@ namespace Client_ServerTest01
     public class InvalidXMLExeption : Exception
     {
         public new string Message = "Invalid XML";
+
         public InvalidXMLExeption()
         {
-
         }
     }
-    class Server
+
+    internal class Server
     {
-        const int ServerPort = 25360;
-        const int FileZillaPort = 14147;
-        const string FileZillaPass = "123456789";
-        const string FileZillaIp = "127.0.0.1";
-        static private void Log(string MethodName, string Error)
+        private const int ServerPort = 25360;
+        private const int FileZillaPort = 14147;
+        private const string FileZillaPass = "123456789";
+        private const string FileZillaIp = "127.0.0.1";
+
+        private static void Log(string MethodName, string Error)
         {
             StreamWriter writer = new StreamWriter(Environment.CurrentDirectory + "\\ErrorLog.txt", true, System.Text.Encoding.UTF8);
             writer.WriteLine(DateTime.Now + " " + MethodName + ":  " + Error);
@@ -34,7 +36,8 @@ namespace Client_ServerTest01
             System.Diagnostics.Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location);
             Environment.Exit(0);
         }
-        static private void CreateFTPUser(XmlNode attr)
+
+        private static void CreateFTPUser(XmlNode attr)
         {
             int Counter = 0;
             string UserName = null, Group = null, Password = null, Login = null;
@@ -49,22 +52,27 @@ namespace Client_ServerTest01
                             UserName = childnode.InnerText;
                             Counter++;
                             break;
+
                         case "Group":
                             Group = childnode.InnerText;
                             Counter++;
                             break;
+
                         case "Password":
                             Password = childnode.InnerText;
                             Counter++;
                             break;
+
                         case "Login":
                             Login = childnode.InnerText;
                             Counter++;
                             break;
+
                         case "SpeedLimit":
                             Limit = ushort.Parse(childnode.InnerText);
                             Counter++;
                             break;
+
                         default:
                             throw new InvalidXMLExeption();
                     }
@@ -114,7 +122,8 @@ namespace Client_ServerTest01
                 Log("CreateUser", ex.Message);
             }
         }
-        static private void RemoveUser(XmlNode attr)
+
+        private static void RemoveUser(XmlNode attr)
         {
             try
             {
@@ -143,7 +152,8 @@ namespace Client_ServerTest01
                 Log("RemoveUser", ex.Message);
             }
         }
-        static private void BanIp(XmlNode attr)
+
+        private static void BanIp(XmlNode attr)
         {
             try
             {
@@ -173,7 +183,8 @@ namespace Client_ServerTest01
                 Log("BanIP", ex.Message);
             }
         }
-        static private List<string> GetBannedIps()
+
+        private static List<string> GetBannedIps()
         {
             try
             {
@@ -192,7 +203,8 @@ namespace Client_ServerTest01
                 return null;
             }
         }
-        static private void EditUserSpeed(XmlNode attr)
+
+        private static void EditUserSpeed(XmlNode attr)
         {
             try
             {
@@ -207,10 +219,12 @@ namespace Client_ServerTest01
                             UserName = childnode.InnerText;
                             Counter++;
                             break;
+
                         case "SpeedLimit":
                             Limit = ushort.Parse(childnode.InnerText);
                             Counter++;
                             break;
+
                         default:
                             throw new InvalidXMLExeption();
                     }
@@ -232,7 +246,7 @@ namespace Client_ServerTest01
                 EditMe.DownloadSpeedLimit = SpeedLimit;
                 fileZillaApi.SetAccountSettings(settings);
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine(DateTime.Now + "  Editing speed for user " + UserName +" : new speed - "+Limit+" Kbs");
+                Console.WriteLine(DateTime.Now + "  Editing speed for user " + UserName + " : new speed - " + Limit + " Kbs");
                 Console.ResetColor();
             }
             catch (Exception ex)
@@ -240,7 +254,8 @@ namespace Client_ServerTest01
                 Log("BanIP", ex.Message);
             }
         }
-        static private void UnWrapEditGroup(XmlNode attr)
+
+        private static void UnWrapEditGroup(XmlNode attr)
         {
             try
             {
@@ -254,10 +269,12 @@ namespace Client_ServerTest01
                             UserName = childnode.InnerText;
                             Counter++;
                             break;
+
                         case "GrupName":
                             GroupName = childnode.InnerText;
                             Counter++;
                             break;
+
                         default:
                             throw new InvalidXMLExeption();
                     }
@@ -273,7 +290,8 @@ namespace Client_ServerTest01
                 Log("UnWrapEditGroup", ex.Message);
             }
         }
-        static private void EditUserGroup(string UserName, string Group)
+
+        private static void EditUserGroup(string UserName, string Group)
         {
             try
             {
@@ -289,9 +307,11 @@ namespace Client_ServerTest01
                     case "Films":
                         AddAlias(UserName, @"\D\Films", "Films", new Permissions());
                         break;
+
                     case "Soft":
                         AddAlias(UserName, @"\D\Soft", "Soft", new Permissions());
                         break;
+
                     case "Films + Soft":
                         AddAlias(UserName, @"\D\Films", "Films", new Permissions());
                         AddAlias(UserName, @"\D\Soft", "Soft", new Permissions());
@@ -305,9 +325,9 @@ namespace Client_ServerTest01
             {
                 Log("EditUser", ex.Message);
             }
-
         }
-        static private void UnWrapXMLAlias(XmlNode attr)
+
+        private static void UnWrapXMLAlias(XmlNode attr)
         {
             try
             {
@@ -322,42 +342,52 @@ namespace Client_ServerTest01
                             Name = childnode.InnerText;
                             Counter++;
                             break;
+
                         case "Path":
                             Path = childnode.InnerText;
                             Counter++;
                             break;
+
                         case "AliasName":
                             AliasName = childnode.InnerText;
                             Counter++;
                             break;
+
                         case "Dcreate":
                             permissions.Dcreate = bool.Parse(childnode.InnerText);
                             Counter++;
                             break;
+
                         case "DDelete":
                             permissions.DDelete = bool.Parse(childnode.InnerText);
                             Counter++;
                             break;
+
                         case "DList":
                             permissions.DList = bool.Parse(childnode.InnerText);
                             Counter++;
                             break;
+
                         case "FAppend":
                             permissions.FAppend = bool.Parse(childnode.InnerText);
                             Counter++;
                             break;
+
                         case "FDelete":
                             permissions.FDelete = bool.Parse(childnode.InnerText);
                             Counter++;
                             break;
+
                         case "FRead":
                             permissions.FRead = bool.Parse(childnode.InnerText);
                             Counter++;
                             break;
+
                         case "FWrite":
                             permissions.FWrite = bool.Parse(childnode.InnerText);
                             Counter++;
                             break;
+
                         default:
                             throw new InvalidXMLExeption();
                     }
@@ -368,12 +398,13 @@ namespace Client_ServerTest01
                 }
                 Task.Run(() => AddAlias(Name, Path, AliasName, permissions));
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                Log("UnwrapXmlAdd",e.Message);
+                Log("UnwrapXmlAdd", e.Message);
             }
         }
-        static private void AddAlias(string UserName, string Path, string AliasName, Permissions Perms)
+
+        private static void AddAlias(string UserName, string Path, string AliasName, Permissions Perms)
         {
             try
             {
@@ -381,7 +412,7 @@ namespace Client_ServerTest01
                 fileZillaApi.Connect(FileZillaPass);
                 var settings = fileZillaApi.GetAccountSettings();
                 var EditMe = settings.Users.Find((User) => Equals(User.UserName, UserName));
-                SharedFolder AddMe = new SharedFolder { Directory = Path , Aliases = new List<string> { AliasName } };
+                SharedFolder AddMe = new SharedFolder { Directory = Path, Aliases = new List<string> { AliasName } };
                 AddMe.AccessRights = AccessRights.DirSubdirs;
                 if (Perms.Dcreate)
                 {
@@ -413,7 +444,7 @@ namespace Client_ServerTest01
                 }
                 fileZillaApi.SetAccountSettings(settings);
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine(DateTime.Now + "  Addng alias \""+ AliasName +"\" to user" + UserName);
+                Console.WriteLine(DateTime.Now + "  Addng alias \"" + AliasName + "\" to user" + UserName);
                 Console.ResetColor();
             }
             catch (Exception ex)
@@ -421,13 +452,14 @@ namespace Client_ServerTest01
                 Log("AddAlias", ex.Message);
             }
         }
-        static private void EditAliasPermissions(XmlNode attr)
+
+        private static void EditAliasPermissions(XmlNode attr)
         {
             try
             {
                 Permissions Perms = new Permissions();
                 int Counter = 0;
-                string UserName = null,AliasName = null;
+                string UserName = null, AliasName = null;
                 foreach (XmlNode childnode in attr.Attributes)
                 {
                     switch (childnode.Name)
@@ -436,38 +468,47 @@ namespace Client_ServerTest01
                             UserName = childnode.InnerText;
                             Counter++;
                             break;
+
                         case "AliasName":
                             AliasName = childnode.InnerText;
                             Counter++;
                             break;
+
                         case "Dcreate":
                             Perms.Dcreate = bool.Parse(childnode.InnerText);
                             Counter++;
                             break;
+
                         case "DDelete":
                             Perms.DDelete = bool.Parse(childnode.InnerText);
                             Counter++;
                             break;
+
                         case "DList":
                             Perms.DList = bool.Parse(childnode.InnerText);
                             Counter++;
                             break;
+
                         case "FAppend":
                             Perms.FAppend = bool.Parse(childnode.InnerText);
                             Counter++;
                             break;
+
                         case "FDelete":
                             Perms.FDelete = bool.Parse(childnode.InnerText);
                             Counter++;
                             break;
+
                         case "FRead":
                             Perms.FRead = bool.Parse(childnode.InnerText);
                             Counter++;
                             break;
+
                         case "FWrite":
                             Perms.FWrite = bool.Parse(childnode.InnerText);
                             Counter++;
                             break;
+
                         default:
                             throw new InvalidXMLExeption();
                     }
@@ -520,7 +561,8 @@ namespace Client_ServerTest01
                 Log("EditAliasPerms", ex.Message);
             }
         }
-        static private void UnWrapXMLRemoveAlias(XmlNode attr)
+
+        private static void UnWrapXMLRemoveAlias(XmlNode attr)
         {
             try
             {
@@ -534,10 +576,12 @@ namespace Client_ServerTest01
                             UserName = childnode.InnerText;
                             Counter++;
                             break;
+
                         case "AliasName":
                             AliasName = childnode.InnerText;
                             Counter++;
                             break;
+
                         default:
                             throw new InvalidXMLExeption();
                     }
@@ -553,7 +597,8 @@ namespace Client_ServerTest01
                 Log("UnWrapXMLRemoveAlias", ex.Message);
             }
         }
-        static private void RemoveAlias(string UserName, string AliasName)
+
+        private static void RemoveAlias(string UserName, string AliasName)
         {
             try
             {
@@ -583,7 +628,8 @@ namespace Client_ServerTest01
                 Log("RemoveAlias", ex.Message);
             }
         }
-        static void Main(string[] args)
+
+        private static void Main(string[] args)
         {
             string MethodName = "Main";
             byte[] data;
@@ -594,10 +640,9 @@ namespace Client_ServerTest01
                 IPEndPoint ipPoint = new IPEndPoint(IPAddress.Parse("0.0.0.0"), ServerPort);
                 Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 listenSocket.Bind(ipPoint);
-                Console.WriteLine(DateTime.Now  + "  Bilding");
+                Console.WriteLine(DateTime.Now + "  Bilding");
                 listenSocket.Listen(100);
-                Console.WriteLine(DateTime.Now +  "  Listening");
-
+                Console.WriteLine(DateTime.Now + "  Listening");
                 while (ExitTrigger)
                 {
                     Socket handler = listenSocket.Accept();
@@ -623,12 +668,11 @@ namespace Client_ServerTest01
 
                         case "Restart":
                             throw new Exception("Restatring");
-
                         case "CreateUser":
                             Task.Run(() => CreateFTPUser(attr));
                             break;
 
-                        case "RemoveUser":            
+                        case "RemoveUser":
                             Task.Run(() => RemoveUser(attr));
                             break;
 
@@ -677,10 +721,10 @@ namespace Client_ServerTest01
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                Log(MethodName,ex.Message);
+                Log(MethodName, ex.Message);
             }
         }
-    }   
+    }
 }

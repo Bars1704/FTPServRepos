@@ -9,6 +9,7 @@
         public bool FDelete { get; set; }
         public bool FRead { get; set; }
         public bool FWrite { get; set; }
+
         public Permissions()
         {
             Dcreate = false;

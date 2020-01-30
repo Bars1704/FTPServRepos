@@ -3,12 +3,12 @@ using System.IO;
 
 namespace Client_ServerTest01
 {
-    class File : Unit
+    internal class File : Unit
     {
         public string Extension { get; set; }
         public bool InstantVuive { get; set; }
 
-        public File (FileInfo finfo, string UserName)
+        public File(FileInfo finfo, string UserName)
         {
             Extension = finfo.Extension;
             InstantVuive = false;
@@ -20,7 +20,8 @@ namespace Client_ServerTest01
             ShareTime = DateTime.MinValue;
             Colour = Colours.Nocolour;
         }
-        public File(FileInfo finfo,File OldFile)
+
+        public File(FileInfo finfo, File OldFile)
         {
             Extension = finfo.Extension;
             InstantVuive = false;

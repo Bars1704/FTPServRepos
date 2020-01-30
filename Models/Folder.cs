@@ -6,11 +6,12 @@ using System.Runtime.Serialization.Formatters.Binary;
 namespace Client_ServerTest01
 {
     [Serializable]
-    class Folder: Unit
+    internal class Folder : Unit
     {
         public int FilesInsideCount { get; set; }
         public List<Unit> Files { get; set; }
-        public Folder(DirectoryInfo dinfo,string UserName,int FileCount)
+
+        public Folder(DirectoryInfo dinfo, string UserName, int FileCount)
         {
             Name = dinfo.Name;
             Path = dinfo.FullName;
@@ -22,7 +23,8 @@ namespace Client_ServerTest01
             Files = GetFilesInside(dinfo, UserName, ref FileCount);
             FilesInsideCount = FileCount;
         }
-        public Folder(DirectoryInfo dinfo, int FileCount,Folder OldFolder)
+
+        public Folder(DirectoryInfo dinfo, int FileCount, Folder OldFolder)
         {
             Name = dinfo.Name;
             Path = dinfo.FullName;
@@ -31,10 +33,11 @@ namespace Client_ServerTest01
             ShareTime = OldFolder.ShareTime;
             Colour = OldFolder.Colour;
             Size = GetSize(dinfo);
-            Files = GetFilesInside(dinfo, OldFolder.Owner, ref FileCount,OldFolder);
-            
+            Files = GetFilesInside(dinfo, OldFolder.Owner, ref FileCount, OldFolder);
+
             FilesInsideCount = FileCount;
         }
+
         private long GetSize(DirectoryInfo dinfo)
         {
             long Size = 0;
@@ -50,7 +53,8 @@ namespace Client_ServerTest01
             }
             return Size;
         }
-        private List<Unit> GetFilesInside(DirectoryInfo dinfo,string UserName ,ref int FilesCount )
+
+        private List<Unit> GetFilesInside(DirectoryInfo dinfo, string UserName, ref int FilesCount)
         {
             var Files = dinfo.GetFiles();
             var Dirs = dinfo.GetDirectories();
@@ -66,6 +70,7 @@ namespace Client_ServerTest01
             }
             return AllFiles;
         }
+
         private List<Unit> GetFilesInside(DirectoryInfo dinfo, string UserName, ref int FilesCount, Folder OldFolder)
         {
             var Files = dinfo.GetFiles();
@@ -74,17 +79,18 @@ namespace Client_ServerTest01
             foreach (var CurFile in Files)
             {
                 File OldFile = (File)OldFolder.Files.Find((x) => x.Name == CurFile.Name && x is File);
-                AllFiles.Add(new File(CurFile,OldFile));
+                AllFiles.Add(new File(CurFile, OldFile));
                 FilesCount++;
             }
             foreach (var CurDir in Dirs)
             {
-                OldFolder = (Folder)OldFolder.Files.Find((x) => x.Name == CurDir.Name&&x is Folder);
+                OldFolder = (Folder)OldFolder.Files.Find((x) => x.Name == CurDir.Name && x is Folder);
                 AllFiles.Add(new Folder(CurDir, FilesCount, OldFolder));
             }
             return AllFiles;
         }
-        public void Serialization(string Path , Folder rootFile,string UserName)
+
+        public void Serialization(string Path, Folder rootFile, string UserName)
         {
             BinaryFormatter Serializer = new BinaryFormatter();
             FileInfo Check = new FileInfo(Path + "\\Cache.dat");
@@ -96,10 +102,9 @@ namespace Client_ServerTest01
                 fs = new FileStream(Path + "\\Cache.dat", FileMode.Open);
                 Folder OldFolder = (Folder)Serializer.Deserialize(fs);
                 RootFile = new Folder(RootDir, 0, OldFolder);
-                
             }
             else
-            { 
+            {
                 RootFile = new Folder(RootDir, UserName, 0);
             }
             RootFile.Name = "Root";
